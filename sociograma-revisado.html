@@ -536,7 +536,7 @@ function drawMapOverlay(m){
     const from=m.project([selected.lon,selected.lat]);
     html+=rel.map(r=>{const a=byId[r.origen===selected.id?r.desti:r.origen];if(a.lat===null)return '';const to=m.project([a.lon,a.lat]);return `<path d="M${from.x},${from.y}L${to.x},${to.y}" fill="none" stroke="${edgeColor(r)}" stroke-width="2.5" stroke-dasharray="${edgeDash(r)==='dashed'?'7 5':edgeDash(r)==='dotted'?'2 5':''}" stroke-opacity=".8" pointer-events="none"/>`}).join('');
   }
-  html+=features().sort((a,b)=>Number(a.selected)-Number(b.selected)).map(g=>{
+  html+=features().sort((a,b)=>(Number(a.selected)*3+Number(a.actors.some(x=>x.id==='S01'||x.id==='S02'))*2)-(Number(b.selected)*3+Number(b.actors.some(x=>x.id==='S01'||x.id==='S02'))*2)).map(g=>{
     const pt=m.project(g.coordinate), cap=g.actors.find(a=>a.id==='S01'||a.id==='S02'), ids=g.actors.map(a=>a.id), label=cap?'✚ '+(cap.id==='S01'?'Salt 1':'Salt 2')+(ids.length>1?' · '+ids.length:''):'';
     if(pt.x < -150||pt.y < -60||pt.x > m.width+150||pt.y > m.height+60)return '';
     const a=g.actors[0], color=state.layer==='distance'?(a.dist_cap_m<500?'#238669':a.dist_cap_m<1000?'#d28b28':'#b34751'):g.actors.length>1?'#4b6574':col[a.esfera];
@@ -576,13 +576,13 @@ function renderNetwork(){
   const levels=state.layout==='nivells'?SaltNetworkLayout(aa,rr,focus):null;
   if(levels){elements.forEach(e=>{if(levels.positions[e.data.id])e.position=levels.positions[e.data.id]});elements.push(...levels.bands.map(b=>({data:{id:b.id,label:b.label,width:b.width,height:b.height},classes:'level-band',position:{x:b.x,y:b.y},selectable:false,grabbable:false})));}
   cy=cytoscape({container:$('#network'),elements,wheelSensitivity:.22,minZoom:.1,maxZoom:3,style:[
-    {selector:'node',style:{'background-color':'data(color)','shape':'data(shape)','width':'data(size)','height':'data(size)','border-color':'#fff','border-width':2,'label':'data(label)','font-family':'system-ui','font-size':focus?13:11,'color':'#233e50','text-valign':'bottom','text-margin-y':7,'text-wrap':focus?'wrap':'ellipsis','text-max-width':focus?180:140,'text-background-color':'#f6f9fb','text-background-opacity':.95,'text-background-padding':3,'min-zoomed-font-size':focus?6:9}},
+    {selector:'node',style:{'background-color':'data(color)','shape':'data(shape)','width':'data(size)','height':'data(size)','border-color':'#fff','border-width':2,'label':'data(label)','font-family':'system-ui','font-size':focus?15:11,'color':'#233e50','text-valign':'bottom','text-margin-y':7,'text-wrap':focus?'wrap':'ellipsis','text-max-width':focus?150:140,'text-background-color':'#f6f9fb','text-background-opacity':.95,'text-background-padding':3,'min-zoomed-font-size':focus?6:9}},
     {selector:'node[root = 1]',style:{'border-width':4,'border-color':'#152b3c','font-weight':'bold'}},
     {selector:'edge',style:{'width':'data(width)','line-color':'data(color)','line-style':'data(dash)','curve-style':'bezier','opacity':focus?.85:.5}},
     {selector:':selected',style:{'border-width':4,'border-color':'#172f42'}},
     {selector:'.muted',style:{opacity:.15}},{selector:'.highlight',style:{'opacity':1,'z-index':10}}
     ,{selector:'.level-band',style:{'shape':'rectangle','width':'data(width)','height':'data(height)','background-color':'#ecf1f7','background-opacity':.65,'border-width':1,'border-color':'#c9d6e2','label':'data(label)','font-size':20,'font-weight':'bold','text-valign':'top','text-margin-y':24,'color':'#466886','z-index':-1,'z-index-compare':'manual','events':'no'}}
-  ],layout:levels?{name:'preset',padding:40,animate:false}:{name:'concentric',concentric:n=>focus?(n.id()===focus?100:0):n.data('degree'),levelWidth:()=>focus?100:7,padding:65,minNodeSpacing:focus?85:35,avoidOverlap:true,animate:false}});
+  ],layout:levels?{name:'preset',padding:40,animate:false}:{name:'concentric',concentric:n=>focus?(n.id()===focus?100:0):n.data('degree'),levelWidth:()=>focus?100:7,padding:24,minNodeSpacing:focus?35:35,avoidOverlap:true,animate:false}});
   cy.on('tap','node',e=>{let id=e.target.id();if(!byId[id])return;openActor(id,false);cy.elements().removeClass('highlight').addClass('muted');e.target.closedNeighborhood().removeClass('muted');e.target.connectedEdges().addClass('highlight')});
   cy.on('tap','edge',e=>showRelation(R.find(r=>r.id===e.target.id())));
   cy.on('tap',e=>{if(e.target===cy)cy.elements().removeClass('muted highlight')});resize();
