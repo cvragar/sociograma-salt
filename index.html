@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="ca">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Sociograma comunitari · CAP Salt 1 i Salt 2 · 2026</title>
+<link rel="stylesheet" href="lib/maplibre-gl.css">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<a class="salta" href="#contingut">Salta al contingut</a>
+<header id="capcal">
+  <button id="obre-calaix" class="btn" aria-controls="calaix" aria-expanded="true" title="Vistes">☰ <span>Vistes</span></button>
+  <h1><a href="#v=portada">Sociograma comunitari · CAP Salt 1 i Salt 2</a></h1>
+  <div class="eines">
+    <button id="btn-3d" class="btn" aria-pressed="true" title="Alterna 2D / 3D">3D</button>
+    <button id="btn-pres" class="btn" aria-pressed="false" title="Mode presentació: recorre les vistes amb vols de càmera">▶ <span>Presentació</span></button>
+    <button id="btn-cerca" class="btn" title="Cerca (Ctrl+K)">Cerca <kbd>Ctrl K</kbd></button>
+    <button id="btn-png" class="btn" title="Exporta la vista en PNG amb la llegenda">PNG</button>
+    <button id="btn-csv" class="btn" title="Exporta la selecció en CSV">CSV</button>
+    <button id="btn-enllac" class="btn" title="Copia l'enllaç que restaura la vista">Enllaç</button>
+  </div>
+</header>
+<nav id="calaix" aria-label="Vistes del visor">
+  <p class="calaix-tit">Una pregunta per vista</p>
+  <ol id="llista-vistes"></ol>
+  <div id="filtres" aria-live="polite"></div>
+</nav>
+<main id="contingut" tabindex="-1">
+  <article id="portada" class="panell"></article>
+  <div id="mapa" role="region" aria-label="Mapa"></div>
+  <div id="xarxa" role="region" aria-label="Sociograma de xarxa"></div>
+  <article id="validacio" class="panell"></article>
+  <aside id="analisi" class="panell-lat" aria-label="Anàlisi"></aside>
+  <section id="llegenda" aria-label="Llegenda"></section>
+</main>
+<aside id="fitxa" aria-label="Fitxa de l'actor" hidden></aside>
+<div id="tooltip" role="tooltip" hidden></div>
+<dialog id="dlg-cerca" aria-label="Cerca d'actors">
+  <input id="cerca-in" type="search" placeholder="Nom, tipus (triangle, rectangle, cercle), àmbit, esfera…" autocomplete="off" aria-controls="cerca-res">
+  <ul id="cerca-res" role="listbox"></ul>
+  <p class="peu-dlg">↑↓ per moure's · Enter per obrir · Esc per tancar</p>
+</dialog>
+<div id="avis" role="status" aria-live="polite" hidden></div>
+<script src="lib/maplibre-gl.js"></script>
+<script src="lib/cytoscape.min.js"></script>
+<script src="lib/deck.gl.min.js"></script>
+<script src="data/dades.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
