@@ -79,6 +79,14 @@ html,body{height:100%;overflow:hidden}.topbar{height:56px;padding:0 16px;gap:14p
 
 .map-photo-status{font-size:10px;line-height:1.4;color:#6a7780}.map-legend{max-height:calc(100% - 360px)}
 
+/* Central map navigation: separate camera controls from the layer settings. */
+.map-navigation{position:absolute;z-index:9;left:50%;bottom:30px;transform:translateX(-50%);display:flex;align-items:center;justify-content:center;gap:18px;flex-wrap:wrap;width:max-content;max-width:calc(100% - 28px);padding:12px 18px 9px;background:#fffffff7;border:1px solid #b8c9d9;border-radius:14px;box-shadow:0 5px 24px #193d5e33;color:#284b70}
+.map-nav-group{display:flex;flex-direction:column;gap:5px;flex:none}.map-nav-label{font-size:11px;font-weight:700;line-height:1.2;letter-spacing:.02em}.map-nav-buttons{display:flex;gap:5px}.map-nav-button{display:grid;place-items:center;width:42px;height:40px;border:1px solid #b7cbdc;background:#edf4fa;border-radius:7px;font-size:27px;line-height:1;font-weight:600;color:#284b70}.map-nav-button:hover{background:#dcecf7;border-color:#6b94b8}.map-nav-button:disabled{background:#f1f3f5}.map-nav-pitch{width:164px}.map-nav-pitch label{display:flex;justify-content:space-between;align-items:center}.map-nav-pitch output{font-size:12px;font-variant-numeric:tabular-nums;color:#386d94}.map-nav-pitch input{width:100%;height:40px;margin:0;accent-color:#386d94;cursor:pointer}.map-nav-center{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-height:58px;padding:5px 12px;background:#284b70;color:#fff;border-radius:8px;font-size:11px;font-weight:650}.map-nav-center>span:first-child{font-size:26px;line-height:1}.map-nav-center:hover{background:#386d94}.map-navigation .map-wheel-hint{width:100%;flex-basis:100%;font-size:11px;text-align:center;line-height:1.3;margin-top:-8px;color:#536d84}.map-tools{max-width:260px}.map-bottom{bottom:145px}.map-legend{bottom:145px;max-height:calc(100% - 390px)}.raster-controls{display:none}.map-status{bottom:222px}.maplibregl-ctrl-top-right{display:none}
+@container(max-width:740px){.map-navigation{gap:12px;padding:10px 12px 8px}.map-nav-pitch{width:140px}.map-bottom{bottom:141px}.map-legend{bottom:141px;max-height:calc(100% - 370px)}.map-tools{top:130px;left:14px;max-width:215px}}
+@media(max-width:850px){.map-navigation{bottom:29px;gap:8px;padding:9px 10px 7px;max-width:calc(100% - 20px);width:max-content;border-radius:11px}.map-nav-label{font-size:10px}.map-nav-button{width:32px;height:36px;font-size:24px}.map-nav-pitch{width:90px}.map-nav-pitch input{height:36px}.map-nav-center{padding:4px 6px;min-height:53px;font-size:10px}.map-nav-center>span:first-child{font-size:23px}.map-navigation .map-wheel-hint{font-size:10px;margin-top:-2px}.map-bottom{bottom:139px}.map-legend,.map-legend[open]{bottom:139px;max-height:27%}.map-tools{top:132px;left:12px;max-width:205px}.map-status{bottom:208px}}
+
+@media(max-width:360px){.map-navigation{width:calc(100% - 20px);gap:9px 20px}.map-nav-group{align-items:center}.map-nav-pitch{width:140px}.map-nav-pitch label{width:100%}.map-bottom,.map-legend,.map-legend[open]{bottom:201px}.map-status{bottom:260px}}
+
 </style>
 </head>
 <body>
@@ -123,7 +131,20 @@ html,body{height:100%;overflow:hidden}.topbar{height:56px;padding:0 16px;gap:14p
     <section id="map-view" class="view active" aria-label="Mapa de recursos">
       <div id="map"></div>
       <div class="map-title floating"><span class="eyebrow">MAPA COMUNITARI</span><h2 id="map-heading">Els recursos de Salt</h2><p id="map-count"></p><div id="map-selection" hidden><button class="text-button" data-action="selected-network">Veure tots els vincles</button><button class="text-button" data-action="clear-selection">Treu la selecció</button></div></div>
-      <div class="map-tools floating"><label>Capa<select id="map-layer"><option value="actors">Actors i recursos</option><option value="ist">Context socioeconòmic · IST 2023</option><option value="distance">Distància als CAP</option></select></label><div class="map-imagery-controls"><label><input id="map-photo" type="checkbox" checked> Imatge aèria · ICGC</label><label><input id="map-buildings" type="checkbox" checked> Edificis 3D</label><span id="map-photo-status" class="map-photo-status" role="status"></span></div><label class="map-arcs-control"><input id="map-arcs" type="checkbox"> Vincles al mapa</label><div class="camera-tools"><button id="rotate-left" class="btn small" aria-label="Gira el mapa cap a l’esquerra">↶</button><button id="rotate-right" class="btn small" aria-label="Gira el mapa cap a la dreta">↷</button><label>Inclinació <input id="map-pitch" type="range" min="0" max="70" step="2" value="58" aria-label="Inclinació del mapa 3D"></label></div><span class="map-wheel-hint" id="map-wheel-hint">Roda: inclina · + / −: zoom</span><button id="fit-map" class="btn small">Centra Salt</button><button id="map-export" class="btn small">PNG</button><a id="map-facades" class="map-facades-link" href="https://visors.icgc.cat/catalunya-digital/carrers-3d/#/place/Salt" target="_blank" rel="noopener">Façanes · panoràmiques ICGC ↗</a></div>
+      <div class="map-tools floating">
+        <label>Capa<select id="map-layer"><option value="actors">Actors i recursos</option><option value="ist">Context socioeconòmic · IST 2023</option><option value="distance">Distància als CAP</option></select></label>
+        <div class="map-imagery-controls"><label><input id="map-photo" type="checkbox" checked> Imatge aèria · ICGC</label><label><input id="map-buildings" type="checkbox" checked> Edificis 3D</label><span id="map-photo-status" class="map-photo-status" role="status"></span></div>
+        <label class="map-arcs-control"><input id="map-arcs" type="checkbox"> Vincles al mapa</label>
+        <button id="map-export" class="btn small">PNG</button>
+        <a id="map-facades" class="map-facades-link" href="https://visors.icgc.cat/catalunya-digital/carrers-3d/#/place/Salt" target="_blank" rel="noopener">Façanes · panoràmiques ICGC ↗</a>
+      </div>
+      <div class="map-navigation floating" role="region" aria-label="Controls del mapa">
+        <div class="map-nav-group"><span class="map-nav-label">Zoom</span><div class="map-nav-buttons"><button id="map-zoom-out" class="map-nav-button" aria-label="Allunya el mapa" title="Allunya el mapa"><span aria-hidden="true">−</span></button><button id="map-zoom-in" class="map-nav-button" aria-label="Apropa el mapa" title="Apropa el mapa"><span aria-hidden="true">+</span></button></div></div>
+        <div class="map-nav-group"><span class="map-nav-label">Gira</span><div class="map-nav-buttons"><button id="rotate-left" class="map-nav-button" aria-label="Gira el mapa cap a l’esquerra" title="Gira a l’esquerra"><span aria-hidden="true">↶</span></button><button id="rotate-right" class="map-nav-button" aria-label="Gira el mapa cap a la dreta" title="Gira a la dreta"><span aria-hidden="true">↷</span></button></div></div>
+        <div class="map-nav-group map-nav-pitch"><label class="map-nav-label" for="map-pitch">Inclinació <output id="map-pitch-value" for="map-pitch">58°</output></label><input id="map-pitch" type="range" min="0" max="70" step="2" value="58" aria-label="Inclinació del mapa 3D"></div>
+        <button id="fit-map" class="map-nav-center"><span aria-hidden="true">⌖</span><span>Centra Salt</span></button>
+        <span class="map-wheel-hint" id="map-wheel-hint">Roda: inclina · + / −: zoom</span>
+      </div>
       <div class="map-status" id="map-status" role="status" hidden></div>
       <div class="map-bottom floating"><span class="cap-key">✚</span><div><b>CAP Salt 1 i Salt 2</b><span>Proximitat ≠ adscripció sanitària</span></div><button data-open="S01">Salt 1</button><button data-open="S02">Salt 2</button></div>
       <details class="map-legend floating" open><summary>Llegenda</summary><div id="legend-content"></div></details>
@@ -345,6 +366,7 @@ html,body{height:100%;overflow:hidden}.topbar{height:56px;padding:0 16px;gap:14p
     resize() { this.width = this.el.clientWidth; this.height = this.el.clientHeight; this.schedule(); }
     schedule() { if (this.frame) return; this.frame = requestAnimationFrame(() => { this.frame = 0; this.render(); }); }
     getZoom() { return this.zoom; }
+    zoomBy(delta) { this.zoomAt(this.zoom + delta,this.width/2,this.height/2); }
     project(coordinate) {
       const p = project(...coordinate, this.zoom), c = project(...this.center, this.zoom);
       return {x:p[0]-c[0]+this.width/2, y:p[1]-c[1]+this.height/2};
@@ -1336,6 +1358,13 @@ earcut.flatten = function (data) {
   'use strict';
   const EARTH=40075016.68557849, EPS=1e-12;
   const TILE_URL='https://geoserveis.icgc.cat/servei/catalunya/mapa-base/wmts/orto/MON3857NW/{z}/{x}/{y}.png';
+  const ORTHO_WMS='https://geoserveis.icgc.cat/servei/catalunya/orto-territorial/wms';
+  // Request the original aerial image at four times the old 256px tile width.
+  // Geometry stays on a coarser grid: detail increases without hundreds of XYZ
+  // requests or meshes. WMS 1.1.1 keeps EPSG:3857 east/north axis order explicit.
+  function photoURL(tile,pixels,base=ORTHO_WMS){const span=EARTH/(2**tile.z),west=tile.x*span-EARTH/2,north=EARTH/2-tile.y*span;
+    return base+(base.includes('?')?'&':'?')+'SERVICE=WMS&VERSION=1.1.1&REQUEST=GetMap&LAYERS=ortofoto_color_vigent&STYLES=&SRS=EPSG:3857&BBOX='+
+      [west,north-span,west+span,north].join(',')+'&WIDTH='+pixels+'&HEIGHT='+pixels+'&FORMAT=image/jpeg';}
   const mercator=p=>{const lat=Math.max(-85.05112878,Math.min(85.05112878,Number(p[1])))*Math.PI/180;
     return [(Number(p[0])+180)/360,(1-Math.log(Math.tan(Math.PI/4+lat/2))/Math.PI)/2];};
   const latitude=y=>Math.atan(Math.sinh(Math.PI*(1-2*y)));
@@ -1412,6 +1441,9 @@ earcut.flatten = function (data) {
     constructor(options={}){this.id=options.id||'salt-photo-roofs';this.type='custom';this.renderingMode='3d';
       this.options=options;this.enabled=options.enabled!==false;this.source=options.source||'openmaptiles';
       this.sourceLayer=options.sourceLayer||'building';this.tiles=new Map();this.frame=0;this.snapshot=null;
+      this.mobile=!!window.matchMedia?.('(max-width: 760px)').matches;
+      this.maxTiles=options.maxTiles||(this.mobile?32:48);this.textureSize=options.textureSize||(this.mobile?512:1024);
+      this.maxConcurrent=options.maxConcurrent||4;this.queue=[];this.activeImages=0;
       this.onChange=()=>this.requestRefresh();this.onSource=e=>{if(e.sourceId===this.source)this.requestRefresh();};}
     onAdd(map,gl){this.map=map;this.gl=gl;
       try{this.initGL();}catch(error){this.error=error.message;this.report();return;}
@@ -1420,8 +1452,10 @@ earcut.flatten = function (data) {
       this.vaoApi=modern?{create:()=>gl.createVertexArray(),bind:v=>gl.bindVertexArray(v),remove:v=>gl.deleteVertexArray(v),binding:gl.VERTEX_ARRAY_BINDING}:
         (()=>{const e=gl.getExtension('OES_vertex_array_object');return e&&{create:()=>e.createVertexArrayOES(),bind:v=>e.bindVertexArrayOES(v),remove:v=>e.deleteVertexArrayOES(v),binding:e.VERTEX_ARRAY_BINDING_OES};})();
       if(!this.vaoApi)throw Error('No hi ha suport per a la textura dels terrats.');
-      const vertex=modern?'#version 300 es\nin vec3 a_position;in vec2 a_uv;out vec2 v_uv;':'attribute vec3 a_position;attribute vec2 a_uv;varying vec2 v_uv;';
-      const fragment=modern?'#version 300 es\nprecision mediump float;in vec2 v_uv;out vec4 color;':'precision mediump float;varying vec2 v_uv;';
+      const highPrecision=modern||!gl.getShaderPrecisionFormat||gl.getShaderPrecisionFormat(gl.FRAGMENT_SHADER,gl.HIGH_FLOAT)?.precision>0;
+      const precision=highPrecision?'highp':'mediump';
+      const vertex=modern?'#version 300 es\nin vec3 a_position;in vec2 a_uv;out '+precision+' vec2 v_uv;':'attribute vec3 a_position;attribute vec2 a_uv;varying '+precision+' vec2 v_uv;';
+      const fragment=modern?'#version 300 es\nprecision '+precision+' float;in '+precision+' vec2 v_uv;out vec4 color;':'precision '+precision+' float;varying '+precision+' vec2 v_uv;';
       const compile=(type,text)=>{const shader=gl.createShader(type);gl.shaderSource(shader,text);gl.compileShader(shader);
         if(!gl.getShaderParameter(shader,gl.COMPILE_STATUS)){const error=gl.getShaderInfoLog(shader);gl.deleteShader(shader);throw Error(error);}return shader;};
       const shaders=[compile(gl.VERTEX_SHADER,vertex+'uniform mat4 u_matrix;void main(){v_uv=a_uv;gl_Position=u_matrix*vec4(a_position,1.0);}'),
@@ -1430,7 +1464,10 @@ earcut.flatten = function (data) {
       for(const s of shaders)gl.deleteShader(s);
       if(!gl.getProgramParameter(program,gl.LINK_STATUS)){const error=gl.getProgramInfoLog(program);gl.deleteProgram(program);throw Error(error);}
       this.program=program;this.position=gl.getAttribLocation(program,'a_position');this.uv=gl.getAttribLocation(program,'a_uv');
-      this.matrix=gl.getUniformLocation(program,'u_matrix');this.sampler=gl.getUniformLocation(program,'u_image');}
+      this.matrix=gl.getUniformLocation(program,'u_matrix');this.sampler=gl.getUniformLocation(program,'u_image');
+      this.anisotropy=gl.getExtension?.('EXT_texture_filter_anisotropic')||gl.getExtension?.('WEBKIT_EXT_texture_filter_anisotropic')||gl.getExtension?.('MOZ_EXT_texture_filter_anisotropic');
+      if(this.anisotropy)this.maxAnisotropy=Math.min(8,gl.getParameter(this.anisotropy.MAX_TEXTURE_MAX_ANISOTROPY_EXT)||1);
+      const limit=gl.getParameter(gl.MAX_TEXTURE_SIZE);if(limit>0)this.textureSize=Math.min(this.textureSize,limit);}
     setEnabled(value){const enabled=!!value;if(enabled===this.enabled)return;this.enabled=enabled;this.snapshot=null;
       if(!enabled){if(this.frame)cancelAnimationFrame(this.frame);this.frame=0;this.clear();}else this.requestRefresh();this.map?.triggerRepaint();}
     requestRefresh(){if(!this.enabled||!this.map||!this.program||this.frame)return;
@@ -1440,30 +1477,46 @@ earcut.flatten = function (data) {
       if(typeof(window.earcut)!=='function'&&typeof(this.options.earcut)!=='function'){this.error='La capa de terrats necessita Earcut.';this.report();return;}
       let features;try{features=this.map.querySourceFeatures(this.source,{sourceLayer:this.sourceLayer});}catch(_){return;}
       const b=this.map.getBounds(),bounds=[b.getWest(),b.getSouth(),b.getEast(),b.getNorth()];
-      const z=Math.max(15,Math.min(17,Math.floor(this.map.getZoom())+1));
+      // 1024px at z17 is about 22cm/pixel in Salt, already close to the native
+      // 25cm aerial data. Smaller mobile textures can use one further grid level.
+      const z=Math.max(15,Math.min(this.textureSize>=1024?17:18,Math.floor(this.map.getZoom())+1));
       const signature=hash(JSON.stringify([z,bounds.map(v=>Math.round(v*10000)),features.map(f=>[f.geometry,roofHeight(f)])]));
       if(signature===this.snapshot)return;this.snapshot=signature;
       const result=buildMeshes(features,z,{earcut:this.options.earcut,center:this.map.getCenter().toArray(),bounds,
-        region:this.options.region||[2.75,41.94,2.835,42.01],maxTiles:this.options.maxTiles||64,maxRoofs:this.options.maxRoofs||2000});
+        region:this.options.region||[2.75,41.94,2.835,42.01],maxTiles:this.maxTiles,maxRoofs:this.options.maxRoofs||2000});
       const keys=new Set(result.tiles.map(t=>t.key));for(const [key,tile] of this.tiles)if(!keys.has(key)){this.release(tile);this.tiles.delete(key);}
+      this.queue=this.queue.filter(tile=>this.tiles.get(tile.key)===tile);
       for(const mesh of result.tiles){let tile=this.tiles.get(mesh.key);
-        if(!tile){tile={...mesh,texture:null,image:null,buffer:this.gl.createBuffer()};this.tiles.set(mesh.key,tile);this.loadTexture(tile);}
+        if(!tile){tile={...mesh,texture:null,image:null,buffer:this.gl.createBuffer()};this.tiles.set(mesh.key,tile);this.queue.push(tile);}
         if(tile.signature!==mesh.signature||!tile.uploaded){Object.assign(tile,{data:mesh.data,count:mesh.count,signature:mesh.signature});
           const previous=this.gl.getParameter(this.gl.ARRAY_BUFFER_BINDING);this.gl.bindBuffer(this.gl.ARRAY_BUFFER,tile.buffer);this.gl.bufferData(this.gl.ARRAY_BUFFER,tile.data,this.gl.STATIC_DRAW);this.gl.bindBuffer(this.gl.ARRAY_BUFFER,previous);tile.uploaded=true;}
       }
-      this.roofs=result.roofs;this.error=null;this.report();this.map.triggerRepaint();}
-    loadTexture(tile){const image=new Image();tile.image=image;image.crossOrigin='anonymous';
-      image.onload=()=>{if(!this.enabled||!this.map||this.tiles.get(tile.key)!==tile)return;const gl=this.gl;
+      this.roofs=result.roofs;this.error=null;this.pumpTextures();this.report();this.map.triggerRepaint();}
+    pumpTextures(){if(!this.enabled||!this.map)return;
+      while(this.activeImages<this.maxConcurrent&&this.queue.length){const tile=this.queue.shift();
+        if(this.tiles.get(tile.key)!==tile||tile.loading||tile.loaded||tile.failed)continue;this.loadTexture(tile);}}
+    loadTexture(tile){const image=new Image();tile.image=image;tile.loading=true;this.activeImages++;image.crossOrigin='anonymous';
+      const valid=()=>this.enabled&&this.map&&this.tiles.get(tile.key)===tile;
+      const finish=()=>{if(tile.loading){tile.loading=false;this.activeImages--;}image.onload=image.onerror=null;tile.image=null;this.pumpTextures();this.report();this.map?.triggerRepaint();};
+      const fallback=()=>{tile.requestSource='wmts';image.src=(this.options.tileUrl||TILE_URL).replace('{z}',tile.z).replace('{x}',tile.x).replace('{y}',tile.y);};
+      image.onload=()=>{if(!valid())return;const gl=this.gl;
         const active=gl.getParameter(gl.ACTIVE_TEXTURE);gl.activeTexture(gl.TEXTURE0);const previous=gl.getParameter(gl.TEXTURE_BINDING_2D),flip=gl.getParameter(gl.UNPACK_FLIP_Y_WEBGL),premultiply=gl.getParameter(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL);
+        let retryFallback=false;
         try{tile.texture=gl.createTexture();gl.bindTexture(gl.TEXTURE_2D,tile.texture);gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,false);gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL,false);
           gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);
           gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);
-          gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,image);tile.loaded=true;
-        }catch(error){tile.failed=true;if(tile.texture)gl.deleteTexture(tile.texture);tile.texture=null;}
+          if(this.anisotropy)gl.texParameterf(gl.TEXTURE_2D,this.anisotropy.TEXTURE_MAX_ANISOTROPY_EXT,this.maxAnisotropy);
+          gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,image);tile.loaded=true;tile.pixels=image.naturalWidth||image.width||(tile.requestSource==='wms'?this.textureSize:256);
+        }catch(error){retryFallback=tile.requestSource==='wms';tile.failed=!retryFallback;if(tile.texture)gl.deleteTexture(tile.texture);tile.texture=null;}
         finally{gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,flip);gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL,premultiply);gl.bindTexture(gl.TEXTURE_2D,previous);gl.activeTexture(active);}
-        this.report();this.map?.triggerRepaint();};
-      image.onerror=()=>{if(this.tiles.get(tile.key)===tile){tile.failed=true;this.report();}};
-      image.src=(this.options.tileUrl||TILE_URL).replace('{z}',tile.z).replace('{x}',tile.x).replace('{y}',tile.y);}
+        if(retryFallback){fallback();return;}
+        finish();};
+      image.onerror=()=>{if(!valid())return;
+        if(tile.requestSource==='wms'){fallback();return;}
+        tile.failed=true;finish();};
+      tile.requestSource=this.options.wmsUrl===false?'wmts':'wms';
+      image.src=tile.requestSource==='wms'?photoURL(tile,this.textureSize,this.options.wmsUrl||ORTHO_WMS):
+        (this.options.tileUrl||TILE_URL).replace('{z}',tile.z).replace('{x}',tile.x).replace('{y}',tile.y);}
     render(gl,matrix){if(!this.enabled||!this.program||!this.tiles.size)return;
       // MapLibre 4 passes the Mercator matrix; accept the newer projection object too.
       const transform=matrix?.defaultProjectionData?.mainMatrix||matrix;if(!transform||transform.length!==16)return;
@@ -1479,16 +1532,19 @@ earcut.flatten = function (data) {
       }finally{this.vaoApi.bind(previous.vao);gl.bindBuffer(gl.ARRAY_BUFFER,previous.buffer);gl.bindTexture(gl.TEXTURE_2D,previous.texture);gl.activeTexture(previous.active);gl.useProgram(previous.program);
         previous.depth?gl.enable(gl.DEPTH_TEST):gl.disable(gl.DEPTH_TEST);gl.depthFunc(previous.depthFunc);gl.depthMask(previous.depthMask);
         previous.blend?gl.enable(gl.BLEND):gl.disable(gl.BLEND);previous.cull?gl.enable(gl.CULL_FACE):gl.disable(gl.CULL_FACE);}}
-    release(tile){if(tile.image){tile.image.onload=tile.image.onerror=null;tile.image.src='';}if(tile.buffer)this.gl.deleteBuffer(tile.buffer);if(tile.texture)this.gl.deleteTexture(tile.texture);}
-    clear(){for(const tile of this.tiles.values())this.release(tile);this.tiles.clear();if(this.vao){this.vaoApi.remove(this.vao);this.vao=null;}}
+    release(tile){if(tile.image){tile.image.onload=tile.image.onerror=null;tile.image.src='';tile.image=null;}if(tile.loading){tile.loading=false;this.activeImages--;}
+      if(tile.buffer)this.gl.deleteBuffer(tile.buffer);if(tile.texture)this.gl.deleteTexture(tile.texture);}
+    clear(){for(const tile of this.tiles.values())this.release(tile);this.tiles.clear();this.queue=[];if(this.vao){this.vaoApi.remove(this.vao);this.vao=null;}}
     retry(){this.clear();this.snapshot=null;this.requestRefresh();}
-    report(){this.options.onStatus?.({loaded:[...this.tiles.values()].filter(t=>t.loaded).length,failed:[...this.tiles.values()].filter(t=>t.failed).length,
-      total:this.tiles.size,roofs:this.roofs||0,message:this.error||null});}
+    report(){const loaded=[...this.tiles.values()].filter(t=>t.loaded);this.options.onStatus?.({loaded:loaded.length,failed:[...this.tiles.values()].filter(t=>t.failed).length,
+      total:this.tiles.size,roofs:this.roofs||0,pixels:loaded.length?Math.min(...loaded.map(t=>t.pixels)):this.textureSize,
+      hd:loaded.filter(t=>t.requestSource==='wms').length,fallback:loaded.filter(t=>t.requestSource==='wmts').length,
+      source:loaded.some(t=>t.requestSource==='wmts')?(loaded.some(t=>t.requestSource==='wms')?'mixed':'wmts'):'wms',active:this.activeImages,message:this.error||null});}
     onRemove(){if(this.frame)cancelAnimationFrame(this.frame);this.frame=0;
       if(this.map){this.map.off('moveend',this.onChange);this.map.off('idle',this.onChange);this.map.off('sourcedata',this.onSource);}
       this.clear();if(this.program)this.gl.deleteProgram(this.program);this.program=null;this.map=null;}
   }
-  SaltPhotoRoofs.geometry=Object.freeze({mercator,clip,buildMeshes,translatedMatrix,roofHeight,unitsAt});
+  SaltPhotoRoofs.geometry=Object.freeze({mercator,clip,buildMeshes,translatedMatrix,roofHeight,unitsAt,photoURL});
   window.SaltPhotoRoofs=SaltPhotoRoofs;
 })();
 
@@ -1511,11 +1567,10 @@ earcut.flatten = function (data) {
         style:'https://tiles.openfreemap.org/styles/positron',
         center:options.center||[2.7915,41.9738], zoom:options.zoom||15,
         pitch:this.is3D?(options.pitch??58):0, bearing:this.is3D?(options.bearing??-22):0,
-        maxPitch:70, maxZoom:19, minZoom:10, preserveDrawingBuffer:true,
+        maxPitch:70, maxZoom:19, minZoom:10, maxTileCacheSize:48, maxTileCacheZoomLevels:2, preserveDrawingBuffer:true,
         attributionControl:false, hash:false});
       this.gl.addControl(new maplibregl.AttributionControl({compact:true,
         customAttribution:'<a href="https://openfreemap.org/" target="_blank" rel="noopener">OpenFreeMap</a> · <a href="https://openmaptiles.org/" target="_blank" rel="noopener">OpenMapTiles</a> · Límits INE · IST Idescat 2023'}));
-      this.gl.addControl(new maplibregl.NavigationControl({visualizePitch:true}),'top-right');
       this.gl.addControl(new maplibregl.ScaleControl({unit:'metric'}),'bottom-left');
       this.gl.on('style.load',()=>this.initLayers());
       this.gl.on('move',()=>this.schedule());
@@ -1536,7 +1591,9 @@ earcut.flatten = function (data) {
     initLayers(){
       this.ready=true; this.dirty=true; clearTimeout(this.loadingTimer); this.lastError=null;
       const m=this.gl, before=m.getStyle().layers.find(l=>l.type==='symbol')?.id;
-      m.addSource('salt-ortho',{type:'raster',tiles:['https://geoserveis.icgc.cat/servei/catalunya/mapa-base/wmts/orto/MON3857NW/{z}/{x}/{y}.png'],tileSize:256,minzoom:12,maxzoom:19,bounds:[2.75,41.94,2.835,42.01],attribution:'Imatge derivada de l’ortofoto de Catalunya © <a href="https://www.icgc.cat/" target="_blank" rel="noopener">ICGC</a> · <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a>'});
+      // 1024-pixel imagery on a logical 512-pixel tile retains two physical
+      // pixels per screen pixel without fetching thousands of tiny tiles.
+      m.addSource('salt-ortho',{type:'raster',tiles:['https://geoserveis.icgc.cat/servei/catalunya/orto-territorial/wms?SERVICE=WMS&VERSION=1.1.1&REQUEST=GetMap&LAYERS=ortofoto_color_vigent&STYLES=&SRS=EPSG:3857&BBOX={bbox-epsg-3857}&WIDTH=1024&HEIGHT=1024&FORMAT=image/jpeg'],tileSize:512,minzoom:12,maxzoom:17,bounds:[2.75,41.94,2.835,42.01],attribution:'Imatge derivada de l’ortofoto de Catalunya © <a href="https://www.icgc.cat/" target="_blank" rel="noopener">ICGC</a> · <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a>'});
       m.addLayer({id:'salt-aerial',type:'raster',source:'salt-ortho',minzoom:12,layout:{visibility:this.scene?.photo!==false?'visible':'none'},paint:{'raster-fade-duration':0}},before);
       // The vector source supplies OSM building heights, with a 5 m visual
       // approximation when render_height is absent. Actor columns are symbols.
@@ -1555,7 +1612,7 @@ earcut.flatten = function (data) {
       m.addLayer({id:'salt-fallback-lines',type:'line',source:'salt-fallback-arcs',paint:{'line-color':['get','c'],'line-width':2,'line-opacity':.75}});
       const paint=opacity=>({'fill-extrusion-color':['case',['==',['get','selected'],1],'#193d5d',['get','c']],
         'fill-extrusion-height':['get','h'],'fill-extrusion-base':0,'fill-extrusion-opacity':opacity,'fill-extrusion-vertical-gradient':true});
-      if(window.SaltPhotoRoofs){this.photoRoofs=new SaltPhotoRoofs({enabled:false,onStatus:status=>{this.el.dataset.roofs=String(status.roofs);this.el.dataset.roofTiles=String(status.loaded);this.el.dataset.roofFailed=String(status.failed);this.roofStatus=status;this.options.onPhotoStatus?.(status);}});m.addLayer(this.photoRoofs);}
+      if(window.SaltPhotoRoofs){this.photoRoofs=new SaltPhotoRoofs({enabled:false,onStatus:status=>{this.el.dataset.roofs=String(status.roofs);this.el.dataset.roofTiles=String(status.loaded);this.el.dataset.roofFailed=String(status.failed);this.el.dataset.roofPixels=String(status.pixels);this.el.dataset.roofSource=status.source;this.el.dataset.roofHD=String(status.hd);this.el.dataset.roofActive=String(status.active);this.roofStatus=status;this.options.onPhotoStatus?.(status);}});m.addLayer(this.photoRoofs);}
       m.addLayer({id:'salt-actors-verified',type:'fill-extrusion',source:'salt-columns',filter:['==',['get','hip'],0],paint:paint(.93)});
       m.addLayer({id:'salt-actors-pending',type:'fill-extrusion',source:'salt-columns',filter:['==',['get','hip'],1],paint:paint(.45)});
       m.addLayer({id:'salt-pending-outline',type:'line',source:'salt-columns',filter:['==',['get','hip'],1],paint:{'line-color':'#2b6cd6','line-width':1.4,'line-dasharray':[2,1.5]}});
@@ -1607,6 +1664,7 @@ earcut.flatten = function (data) {
     }
     camera(){return {center:this.gl.getCenter().toArray(),zoom:this.gl.getZoom(),pitch:this.gl.getPitch(),bearing:this.gl.getBearing()};}
     getZoom(){return this.gl.getZoom();}
+    zoomBy(delta){this.options.onInteraction?.();this.gl.stop();this.gl.easeTo({zoom:Math.max(10,Math.min(19,this.gl.getZoom()+delta)),duration:250,essential:false});}
     project(coordinate){return this.gl.project(coordinate);}
     easeTo(camera){const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
       const c={...camera,duration:camera.duration??1400,essential:false};
@@ -1813,10 +1871,10 @@ function features(){
 const CAM={actors:{center:[2.7915,41.9738],zoom:15,pitch:58,bearing:-22},salut:{center:[2.7901,41.9736],zoom:15.4,pitch:60,bearing:-35},tercer:{center:[2.792,41.9741],zoom:15.2,pitch:60,bearing:-25},educatiu:{center:[2.7915,41.9738],zoom:15,pitch:55,bearing:20},diversitat:{center:[2.7915,41.9738],zoom:15.1,pitch:58,bearing:-8},ist:{center:[2.7893,41.974],zoom:14.8,pitch:52,bearing:-10},distancia:{center:[2.7893,41.974],zoom:14.8,pitch:55,bearing:-22}};
 function cameraForTopic(){let c={...(state.camera||CAM[state.topic]||CAM.actors)};if(matchMedia('(max-width:850px)').matches){c.pitch=Math.min(c.pitch,40);if(!state.camera)c.zoom-=.4}if(!state.d3){c.pitch=0;c.bearing=0}return c}
 function applyMapCamera(){if(map)map.easeTo(cameraForTopic())}
-function sync3DControls(){const b=$('#toggle-3d');b.textContent=state.d3?'3D':'2D';b.setAttribute('aria-pressed',String(state.d3));b.title=b.disabled?'Aquest navegador utilitza el mapa 2D':state.d3?'Vista 3D activa: passa a 2D':'Vista 2D activa: passa a 3D';$('#map-arcs').checked=state.arcs;$('#map-photo').checked=!!map?.setScene&&state.photo;$('#map-photo').disabled=!map?.setScene;$('#map-buildings').checked=!!map?.setScene&&state.buildings;$('#map-buildings').disabled=!state.d3||!map?.setScene;$('#map-photo-status').hidden=!state.photo||!state.d3||!state.buildings||!map?.setScene;if(!$('#map-photo-status').textContent)$('#map-photo-status').textContent='Ortofoto · parets esquemàtiques';$('#map-wheel-hint').textContent=state.d3?'Roda: inclina · + / −: zoom':'Roda: zoom';$('#map-pitch').disabled=!state.d3;$('#rotate-left').disabled=!state.d3;$('#rotate-right').disabled=!state.d3;$('#map-pitch').value=Math.round(state.camera?.pitch??CAM[state.topic]?.pitch??58)}
+function sync3DControls(){const b=$('#toggle-3d');b.textContent=state.d3?'3D':'2D';b.setAttribute('aria-pressed',String(state.d3));b.title=b.disabled?'Aquest navegador utilitza el mapa 2D':state.d3?'Vista 3D activa: passa a 2D':'Vista 2D activa: passa a 3D';$('#map-arcs').checked=state.arcs;$('#map-photo').checked=!!map?.setScene&&state.photo;$('#map-photo').disabled=!map?.setScene;$('#map-buildings').checked=!!map?.setScene&&state.buildings;$('#map-buildings').disabled=!state.d3||!map?.setScene;$('#map-photo-status').hidden=!state.photo||!state.d3||!state.buildings||!map?.setScene;if(!$('#map-photo-status').textContent)$('#map-photo-status').textContent='Ortofoto · parets esquemàtiques';$('#map-wheel-hint').textContent=state.d3?'Roda: inclina · + / −: zoom':'Roda: zoom';$('#map-pitch').disabled=!state.d3;$('#rotate-left').disabled=!state.d3;$('#rotate-right').disabled=!state.d3;const pitch=state.d3?Math.round(state.camera?.pitch??CAM[state.topic]?.pitch??58):0;$('#map-pitch').value=pitch;$('#map-pitch-value').textContent=pitch+'°';$('#map-zoom-in').disabled=!map||map.getZoom()>=19;$('#map-zoom-out').disabled=!map||map.getZoom()<=10}
 function initMap(){
   if(map)return;
-  const options={...cameraForTopic(),d3:state.d3,onActor:id=>openActor(id),onSection:showSection,onInteraction:stopPresentation,onPhotoStatus:status=>{const el=$('#map-photo-status');el.hidden=!state.photo||!state.d3||!state.buildings;el.textContent=status.message||status.failed?'Alguns terrats sense imatge':status.loaded?'Terrats amb imatge · parets esquemàtiques':status.total?'Carregant les imatges dels terrats…':'Ortofoto · parets esquemàtiques';},onCamera:c=>{state.camera=c;if(state.view==='mapa')updateHash();sync3DControls();syncFacadeLink()},onStatus:status=>{
+  const options={...cameraForTopic(),d3:state.d3,onActor:id=>openActor(id),onSection:showSection,onInteraction:stopPresentation,onPhotoStatus:status=>{const el=$('#map-photo-status');el.hidden=!state.photo||!state.d3||!state.buildings;el.textContent=status.message||status.failed?'Alguns terrats sense imatge':status.loaded?(status.fallback?'Terrats amb imatge · qualitat estàndard':status.pixels>=512?'Terrats en alta resolució · parets esquemàtiques':'Terrats amb imatge · parets esquemàtiques'):status.total?'Carregant les imatges dels terrats…':'Ortofoto · parets esquemàtiques';},onCamera:c=>{state.camera=c;if(state.view==='mapa')updateHash();sync3DControls();syncFacadeLink()},onStatus:status=>{
     const el=$('#map-status');
     if(status.failed||status.timeout&&status.loaded<status.total){el.hidden=false;el.innerHTML='No s’ha carregat tot el mapa. Comprova la connexió. <button class="text-button" data-action="retry-map">Reintenta</button>';}
     else if(status.arcsFallback&&state.d3){el.hidden=false;el.textContent='Columnes 3D actives. Els vincles es mostren al terra perquè no s’ha carregat la capa d’arcs.';}
@@ -2093,7 +2151,8 @@ $('#map-arcs').onchange=e=>{stopPresentation();state.arcs=e.target.checked;rende
 for(const [id,step] of [['#rotate-left',-25],['#rotate-right',25]])$(id).onclick=()=>{stopPresentation();if(map?.camera){let c=map.camera();c.bearing+=step;map.easeTo({...c,duration:700})}};
 $('#map-photo').onchange=e=>{stopPresentation();state.photo=e.target.checked;renderMap();updateHash()};
 $('#map-buildings').onchange=e=>{stopPresentation();state.buildings=e.target.checked;renderMap();updateHash()};
-$('#map-pitch').oninput=e=>{stopPresentation();if(map?.camera)map.easeTo({...map.camera(),pitch:Number(e.target.value),duration:120})};
+$('#map-pitch').oninput=e=>{stopPresentation();$('#map-pitch-value').textContent=e.target.value+'°';if(map?.camera)map.easeTo({...map.camera(),pitch:Number(e.target.value),duration:120})};
+for(const [id,step] of [['#map-zoom-in',1],['#map-zoom-out',-1]])$(id).onclick=()=>{stopPresentation();map?.zoomBy(step);sync3DControls()};
 $('#presentation').onclick=startPresentation;
 document.addEventListener('pointerdown',e=>{if(presentationTimer!==null&&!e.target.closest('#presentation'))stopPresentation()});
 document.addEventListener('keydown',e=>{if(presentationTimer!==null)stopPresentation()});
