@@ -71,6 +71,14 @@ html,body{height:100%;overflow:hidden}.topbar{height:56px;padding:0 16px;gap:14p
 @container(max-width:740px){.vector-map .maplibregl-ctrl-top-right{top:4px;right:4px}.map-tools{top:142px;left:14px;max-width:230px}.map-title{max-width:calc(100% - 74px)}.camera-tools input{width:90px}}
 @media(max-width:850px){#presentation span{display:none}.map-tools{top:146px;left:12px;max-width:215px}.vector-map .maplibregl-ctrl-top-right{top:2px;right:2px}.map-legend[open]{max-height:31%}.map-tools label{font-size:10px}.camera-tools input{width:90px}.top-actions{gap:3px}.top-actions .btn{padding:6px 7px}.map-status{bottom:140px}}
 
+/* Optional aerial imagery; controls keep their own wheel behavior. */
+.map-imagery-controls{display:flex;flex-direction:column;gap:5px;width:100%}.map-imagery-controls label{display:flex;align-items:center;gap:6px;font-size:11px}.map-imagery-controls input{width:14px;height:14px;margin:0;accent-color:#386d94}.map-wheel-hint{font-size:10px;color:#607789;flex-basis:100%}.map-legend{max-height:calc(100% - 315px)}
+@media(max-width:850px){.map-legend[open]{max-height:27%}}
+
+.map-facades-link{display:block;flex-basis:100%;font-size:10px;color:#386d94;text-decoration:none;margin-top:2px}.map-facades-link:hover{text-decoration:underline}.map-legend{max-height:calc(100% - 340px)}
+
+.map-photo-status{font-size:10px;line-height:1.4;color:#6a7780}.map-legend{max-height:calc(100% - 360px)}
+
 </style>
 </head>
 <body>
@@ -115,7 +123,7 @@ html,body{height:100%;overflow:hidden}.topbar{height:56px;padding:0 16px;gap:14p
     <section id="map-view" class="view active" aria-label="Mapa de recursos">
       <div id="map"></div>
       <div class="map-title floating"><span class="eyebrow">MAPA COMUNITARI</span><h2 id="map-heading">Els recursos de Salt</h2><p id="map-count"></p><div id="map-selection" hidden><button class="text-button" data-action="selected-network">Veure tots els vincles</button><button class="text-button" data-action="clear-selection">Treu la selecció</button></div></div>
-      <div class="map-tools floating"><label>Capa<select id="map-layer"><option value="actors">Actors i recursos</option><option value="ist">Context socioeconòmic · IST 2023</option><option value="distance">Distància als CAP</option></select></label><label class="map-arcs-control"><input id="map-arcs" type="checkbox"> Vincles al mapa</label><div class="camera-tools"><button id="rotate-left" class="btn small" aria-label="Gira el mapa cap a l’esquerra">↶</button><button id="rotate-right" class="btn small" aria-label="Gira el mapa cap a la dreta">↷</button><label>Inclinació <input id="map-pitch" type="range" min="20" max="70" step="2" value="58" aria-label="Inclinació del mapa 3D"></label></div><button id="fit-map" class="btn small">Centra Salt</button><button id="map-export" class="btn small">PNG</button></div>
+      <div class="map-tools floating"><label>Capa<select id="map-layer"><option value="actors">Actors i recursos</option><option value="ist">Context socioeconòmic · IST 2023</option><option value="distance">Distància als CAP</option></select></label><div class="map-imagery-controls"><label><input id="map-photo" type="checkbox" checked> Imatge aèria · ICGC</label><label><input id="map-buildings" type="checkbox" checked> Edificis 3D</label><span id="map-photo-status" class="map-photo-status" role="status"></span></div><label class="map-arcs-control"><input id="map-arcs" type="checkbox"> Vincles al mapa</label><div class="camera-tools"><button id="rotate-left" class="btn small" aria-label="Gira el mapa cap a l’esquerra">↶</button><button id="rotate-right" class="btn small" aria-label="Gira el mapa cap a la dreta">↷</button><label>Inclinació <input id="map-pitch" type="range" min="0" max="70" step="2" value="58" aria-label="Inclinació del mapa 3D"></label></div><span class="map-wheel-hint" id="map-wheel-hint">Roda: inclina · + / −: zoom</span><button id="fit-map" class="btn small">Centra Salt</button><button id="map-export" class="btn small">PNG</button><a id="map-facades" class="map-facades-link" href="https://visors.icgc.cat/catalunya-digital/carrers-3d/#/place/Salt" target="_blank" rel="noopener">Façanes · panoràmiques ICGC ↗</a></div>
       <div class="map-status" id="map-status" role="status" hidden></div>
       <div class="map-bottom floating"><span class="cap-key">✚</span><div><b>CAP Salt 1 i Salt 2</b><span>Proximitat ≠ adscripció sanitària</span></div><button data-open="S01">Salt 1</button><button data-open="S02">Salt 2</button></div>
       <details class="map-legend floating" open><summary>Llegenda</summary><div id="legend-content"></div></details>
@@ -635,6 +643,856 @@ return maplibregl$1;
 })(typeof window === 'undefined' ? globalThis : window);
 
 </script><script>
+/* Mapbox earcut v2.2.4 · ISC. Browser wrapper only; see LICENSE-earcut.txt. */
+(function(){
+'use strict';
+
+window.earcut = earcut;
+
+function earcut(data, holeIndices, dim) {
+
+    dim = dim || 2;
+
+    var hasHoles = holeIndices && holeIndices.length,
+        outerLen = hasHoles ? holeIndices[0] * dim : data.length,
+        outerNode = linkedList(data, 0, outerLen, dim, true),
+        triangles = [];
+
+    if (!outerNode || outerNode.next === outerNode.prev) return triangles;
+
+    var minX, minY, maxX, maxY, x, y, invSize;
+
+    if (hasHoles) outerNode = eliminateHoles(data, holeIndices, outerNode, dim);
+
+    // if the shape is not too simple, we'll use z-order curve hash later; calculate polygon bbox
+    if (data.length > 80 * dim) {
+        minX = maxX = data[0];
+        minY = maxY = data[1];
+
+        for (var i = dim; i < outerLen; i += dim) {
+            x = data[i];
+            y = data[i + 1];
+            if (x < minX) minX = x;
+            if (y < minY) minY = y;
+            if (x > maxX) maxX = x;
+            if (y > maxY) maxY = y;
+        }
+
+        // minX, minY and invSize are later used to transform coords into integers for z-order calculation
+        invSize = Math.max(maxX - minX, maxY - minY);
+        invSize = invSize !== 0 ? 32767 / invSize : 0;
+    }
+
+    earcutLinked(outerNode, triangles, dim, minX, minY, invSize, 0);
+
+    return triangles;
+}
+
+// create a circular doubly linked list from polygon points in the specified winding order
+function linkedList(data, start, end, dim, clockwise) {
+    var i, last;
+
+    if (clockwise === (signedArea(data, start, end, dim) > 0)) {
+        for (i = start; i < end; i += dim) last = insertNode(i, data[i], data[i + 1], last);
+    } else {
+        for (i = end - dim; i >= start; i -= dim) last = insertNode(i, data[i], data[i + 1], last);
+    }
+
+    if (last && equals(last, last.next)) {
+        removeNode(last);
+        last = last.next;
+    }
+
+    return last;
+}
+
+// eliminate colinear or duplicate points
+function filterPoints(start, end) {
+    if (!start) return start;
+    if (!end) end = start;
+
+    var p = start,
+        again;
+    do {
+        again = false;
+
+        if (!p.steiner && (equals(p, p.next) || area(p.prev, p, p.next) === 0)) {
+            removeNode(p);
+            p = end = p.prev;
+            if (p === p.next) break;
+            again = true;
+
+        } else {
+            p = p.next;
+        }
+    } while (again || p !== end);
+
+    return end;
+}
+
+// main ear slicing loop which triangulates a polygon (given as a linked list)
+function earcutLinked(ear, triangles, dim, minX, minY, invSize, pass) {
+    if (!ear) return;
+
+    // interlink polygon nodes in z-order
+    if (!pass && invSize) indexCurve(ear, minX, minY, invSize);
+
+    var stop = ear,
+        prev, next;
+
+    // iterate through ears, slicing them one by one
+    while (ear.prev !== ear.next) {
+        prev = ear.prev;
+        next = ear.next;
+
+        if (invSize ? isEarHashed(ear, minX, minY, invSize) : isEar(ear)) {
+            // cut off the triangle
+            triangles.push(prev.i / dim | 0);
+            triangles.push(ear.i / dim | 0);
+            triangles.push(next.i / dim | 0);
+
+            removeNode(ear);
+
+            // skipping the next vertex leads to less sliver triangles
+            ear = next.next;
+            stop = next.next;
+
+            continue;
+        }
+
+        ear = next;
+
+        // if we looped through the whole remaining polygon and can't find any more ears
+        if (ear === stop) {
+            // try filtering points and slicing again
+            if (!pass) {
+                earcutLinked(filterPoints(ear), triangles, dim, minX, minY, invSize, 1);
+
+            // if this didn't work, try curing all small self-intersections locally
+            } else if (pass === 1) {
+                ear = cureLocalIntersections(filterPoints(ear), triangles, dim);
+                earcutLinked(ear, triangles, dim, minX, minY, invSize, 2);
+
+            // as a last resort, try splitting the remaining polygon into two
+            } else if (pass === 2) {
+                splitEarcut(ear, triangles, dim, minX, minY, invSize);
+            }
+
+            break;
+        }
+    }
+}
+
+// check whether a polygon node forms a valid ear with adjacent nodes
+function isEar(ear) {
+    var a = ear.prev,
+        b = ear,
+        c = ear.next;
+
+    if (area(a, b, c) >= 0) return false; // reflex, can't be an ear
+
+    // now make sure we don't have other points inside the potential ear
+    var ax = a.x, bx = b.x, cx = c.x, ay = a.y, by = b.y, cy = c.y;
+
+    // triangle bbox; min & max are calculated like this for speed
+    var x0 = ax < bx ? (ax < cx ? ax : cx) : (bx < cx ? bx : cx),
+        y0 = ay < by ? (ay < cy ? ay : cy) : (by < cy ? by : cy),
+        x1 = ax > bx ? (ax > cx ? ax : cx) : (bx > cx ? bx : cx),
+        y1 = ay > by ? (ay > cy ? ay : cy) : (by > cy ? by : cy);
+
+    var p = c.next;
+    while (p !== a) {
+        if (p.x >= x0 && p.x <= x1 && p.y >= y0 && p.y <= y1 &&
+            pointInTriangle(ax, ay, bx, by, cx, cy, p.x, p.y) &&
+            area(p.prev, p, p.next) >= 0) return false;
+        p = p.next;
+    }
+
+    return true;
+}
+
+function isEarHashed(ear, minX, minY, invSize) {
+    var a = ear.prev,
+        b = ear,
+        c = ear.next;
+
+    if (area(a, b, c) >= 0) return false; // reflex, can't be an ear
+
+    var ax = a.x, bx = b.x, cx = c.x, ay = a.y, by = b.y, cy = c.y;
+
+    // triangle bbox; min & max are calculated like this for speed
+    var x0 = ax < bx ? (ax < cx ? ax : cx) : (bx < cx ? bx : cx),
+        y0 = ay < by ? (ay < cy ? ay : cy) : (by < cy ? by : cy),
+        x1 = ax > bx ? (ax > cx ? ax : cx) : (bx > cx ? bx : cx),
+        y1 = ay > by ? (ay > cy ? ay : cy) : (by > cy ? by : cy);
+
+    // z-order range for the current triangle bbox;
+    var minZ = zOrder(x0, y0, minX, minY, invSize),
+        maxZ = zOrder(x1, y1, minX, minY, invSize);
+
+    var p = ear.prevZ,
+        n = ear.nextZ;
+
+    // look for points inside the triangle in both directions
+    while (p && p.z >= minZ && n && n.z <= maxZ) {
+        if (p.x >= x0 && p.x <= x1 && p.y >= y0 && p.y <= y1 && p !== a && p !== c &&
+            pointInTriangle(ax, ay, bx, by, cx, cy, p.x, p.y) && area(p.prev, p, p.next) >= 0) return false;
+        p = p.prevZ;
+
+        if (n.x >= x0 && n.x <= x1 && n.y >= y0 && n.y <= y1 && n !== a && n !== c &&
+            pointInTriangle(ax, ay, bx, by, cx, cy, n.x, n.y) && area(n.prev, n, n.next) >= 0) return false;
+        n = n.nextZ;
+    }
+
+    // look for remaining points in decreasing z-order
+    while (p && p.z >= minZ) {
+        if (p.x >= x0 && p.x <= x1 && p.y >= y0 && p.y <= y1 && p !== a && p !== c &&
+            pointInTriangle(ax, ay, bx, by, cx, cy, p.x, p.y) && area(p.prev, p, p.next) >= 0) return false;
+        p = p.prevZ;
+    }
+
+    // look for remaining points in increasing z-order
+    while (n && n.z <= maxZ) {
+        if (n.x >= x0 && n.x <= x1 && n.y >= y0 && n.y <= y1 && n !== a && n !== c &&
+            pointInTriangle(ax, ay, bx, by, cx, cy, n.x, n.y) && area(n.prev, n, n.next) >= 0) return false;
+        n = n.nextZ;
+    }
+
+    return true;
+}
+
+// go through all polygon nodes and cure small local self-intersections
+function cureLocalIntersections(start, triangles, dim) {
+    var p = start;
+    do {
+        var a = p.prev,
+            b = p.next.next;
+
+        if (!equals(a, b) && intersects(a, p, p.next, b) && locallyInside(a, b) && locallyInside(b, a)) {
+
+            triangles.push(a.i / dim | 0);
+            triangles.push(p.i / dim | 0);
+            triangles.push(b.i / dim | 0);
+
+            // remove two nodes involved
+            removeNode(p);
+            removeNode(p.next);
+
+            p = start = b;
+        }
+        p = p.next;
+    } while (p !== start);
+
+    return filterPoints(p);
+}
+
+// try splitting polygon into two and triangulate them independently
+function splitEarcut(start, triangles, dim, minX, minY, invSize) {
+    // look for a valid diagonal that divides the polygon into two
+    var a = start;
+    do {
+        var b = a.next.next;
+        while (b !== a.prev) {
+            if (a.i !== b.i && isValidDiagonal(a, b)) {
+                // split the polygon in two by the diagonal
+                var c = splitPolygon(a, b);
+
+                // filter colinear points around the cuts
+                a = filterPoints(a, a.next);
+                c = filterPoints(c, c.next);
+
+                // run earcut on each half
+                earcutLinked(a, triangles, dim, minX, minY, invSize, 0);
+                earcutLinked(c, triangles, dim, minX, minY, invSize, 0);
+                return;
+            }
+            b = b.next;
+        }
+        a = a.next;
+    } while (a !== start);
+}
+
+// link every hole into the outer loop, producing a single-ring polygon without holes
+function eliminateHoles(data, holeIndices, outerNode, dim) {
+    var queue = [],
+        i, len, start, end, list;
+
+    for (i = 0, len = holeIndices.length; i < len; i++) {
+        start = holeIndices[i] * dim;
+        end = i < len - 1 ? holeIndices[i + 1] * dim : data.length;
+        list = linkedList(data, start, end, dim, false);
+        if (list === list.next) list.steiner = true;
+        queue.push(getLeftmost(list));
+    }
+
+    queue.sort(compareX);
+
+    // process holes from left to right
+    for (i = 0; i < queue.length; i++) {
+        outerNode = eliminateHole(queue[i], outerNode);
+    }
+
+    return outerNode;
+}
+
+function compareX(a, b) {
+    return a.x - b.x;
+}
+
+// find a bridge between vertices that connects hole with an outer ring and and link it
+function eliminateHole(hole, outerNode) {
+    var bridge = findHoleBridge(hole, outerNode);
+    if (!bridge) {
+        return outerNode;
+    }
+
+    var bridgeReverse = splitPolygon(bridge, hole);
+
+    // filter collinear points around the cuts
+    filterPoints(bridgeReverse, bridgeReverse.next);
+    return filterPoints(bridge, bridge.next);
+}
+
+// David Eberly's algorithm for finding a bridge between hole and outer polygon
+function findHoleBridge(hole, outerNode) {
+    var p = outerNode,
+        hx = hole.x,
+        hy = hole.y,
+        qx = -Infinity,
+        m;
+
+    // find a segment intersected by a ray from the hole's leftmost point to the left;
+    // segment's endpoint with lesser x will be potential connection point
+    do {
+        if (hy <= p.y && hy >= p.next.y && p.next.y !== p.y) {
+            var x = p.x + (hy - p.y) * (p.next.x - p.x) / (p.next.y - p.y);
+            if (x <= hx && x > qx) {
+                qx = x;
+                m = p.x < p.next.x ? p : p.next;
+                if (x === hx) return m; // hole touches outer segment; pick leftmost endpoint
+            }
+        }
+        p = p.next;
+    } while (p !== outerNode);
+
+    if (!m) return null;
+
+    // look for points inside the triangle of hole point, segment intersection and endpoint;
+    // if there are no points found, we have a valid connection;
+    // otherwise choose the point of the minimum angle with the ray as connection point
+
+    var stop = m,
+        mx = m.x,
+        my = m.y,
+        tanMin = Infinity,
+        tan;
+
+    p = m;
+
+    do {
+        if (hx >= p.x && p.x >= mx && hx !== p.x &&
+                pointInTriangle(hy < my ? hx : qx, hy, mx, my, hy < my ? qx : hx, hy, p.x, p.y)) {
+
+            tan = Math.abs(hy - p.y) / (hx - p.x); // tangential
+
+            if (locallyInside(p, hole) &&
+                (tan < tanMin || (tan === tanMin && (p.x > m.x || (p.x === m.x && sectorContainsSector(m, p)))))) {
+                m = p;
+                tanMin = tan;
+            }
+        }
+
+        p = p.next;
+    } while (p !== stop);
+
+    return m;
+}
+
+// whether sector in vertex m contains sector in vertex p in the same coordinates
+function sectorContainsSector(m, p) {
+    return area(m.prev, m, p.prev) < 0 && area(p.next, m, m.next) < 0;
+}
+
+// interlink polygon nodes in z-order
+function indexCurve(start, minX, minY, invSize) {
+    var p = start;
+    do {
+        if (p.z === 0) p.z = zOrder(p.x, p.y, minX, minY, invSize);
+        p.prevZ = p.prev;
+        p.nextZ = p.next;
+        p = p.next;
+    } while (p !== start);
+
+    p.prevZ.nextZ = null;
+    p.prevZ = null;
+
+    sortLinked(p);
+}
+
+// Simon Tatham's linked list merge sort algorithm
+// http://www.chiark.greenend.org.uk/~sgtatham/algorithms/listsort.html
+function sortLinked(list) {
+    var i, p, q, e, tail, numMerges, pSize, qSize,
+        inSize = 1;
+
+    do {
+        p = list;
+        list = null;
+        tail = null;
+        numMerges = 0;
+
+        while (p) {
+            numMerges++;
+            q = p;
+            pSize = 0;
+            for (i = 0; i < inSize; i++) {
+                pSize++;
+                q = q.nextZ;
+                if (!q) break;
+            }
+            qSize = inSize;
+
+            while (pSize > 0 || (qSize > 0 && q)) {
+
+                if (pSize !== 0 && (qSize === 0 || !q || p.z <= q.z)) {
+                    e = p;
+                    p = p.nextZ;
+                    pSize--;
+                } else {
+                    e = q;
+                    q = q.nextZ;
+                    qSize--;
+                }
+
+                if (tail) tail.nextZ = e;
+                else list = e;
+
+                e.prevZ = tail;
+                tail = e;
+            }
+
+            p = q;
+        }
+
+        tail.nextZ = null;
+        inSize *= 2;
+
+    } while (numMerges > 1);
+
+    return list;
+}
+
+// z-order of a point given coords and inverse of the longer side of data bbox
+function zOrder(x, y, minX, minY, invSize) {
+    // coords are transformed into non-negative 15-bit integer range
+    x = (x - minX) * invSize | 0;
+    y = (y - minY) * invSize | 0;
+
+    x = (x | (x << 8)) & 0x00FF00FF;
+    x = (x | (x << 4)) & 0x0F0F0F0F;
+    x = (x | (x << 2)) & 0x33333333;
+    x = (x | (x << 1)) & 0x55555555;
+
+    y = (y | (y << 8)) & 0x00FF00FF;
+    y = (y | (y << 4)) & 0x0F0F0F0F;
+    y = (y | (y << 2)) & 0x33333333;
+    y = (y | (y << 1)) & 0x55555555;
+
+    return x | (y << 1);
+}
+
+// find the leftmost node of a polygon ring
+function getLeftmost(start) {
+    var p = start,
+        leftmost = start;
+    do {
+        if (p.x < leftmost.x || (p.x === leftmost.x && p.y < leftmost.y)) leftmost = p;
+        p = p.next;
+    } while (p !== start);
+
+    return leftmost;
+}
+
+// check if a point lies within a convex triangle
+function pointInTriangle(ax, ay, bx, by, cx, cy, px, py) {
+    return (cx - px) * (ay - py) >= (ax - px) * (cy - py) &&
+           (ax - px) * (by - py) >= (bx - px) * (ay - py) &&
+           (bx - px) * (cy - py) >= (cx - px) * (by - py);
+}
+
+// check if a diagonal between two polygon nodes is valid (lies in polygon interior)
+function isValidDiagonal(a, b) {
+    return a.next.i !== b.i && a.prev.i !== b.i && !intersectsPolygon(a, b) && // dones't intersect other edges
+           (locallyInside(a, b) && locallyInside(b, a) && middleInside(a, b) && // locally visible
+            (area(a.prev, a, b.prev) || area(a, b.prev, b)) || // does not create opposite-facing sectors
+            equals(a, b) && area(a.prev, a, a.next) > 0 && area(b.prev, b, b.next) > 0); // special zero-length case
+}
+
+// signed area of a triangle
+function area(p, q, r) {
+    return (q.y - p.y) * (r.x - q.x) - (q.x - p.x) * (r.y - q.y);
+}
+
+// check if two points are equal
+function equals(p1, p2) {
+    return p1.x === p2.x && p1.y === p2.y;
+}
+
+// check if two segments intersect
+function intersects(p1, q1, p2, q2) {
+    var o1 = sign(area(p1, q1, p2));
+    var o2 = sign(area(p1, q1, q2));
+    var o3 = sign(area(p2, q2, p1));
+    var o4 = sign(area(p2, q2, q1));
+
+    if (o1 !== o2 && o3 !== o4) return true; // general case
+
+    if (o1 === 0 && onSegment(p1, p2, q1)) return true; // p1, q1 and p2 are collinear and p2 lies on p1q1
+    if (o2 === 0 && onSegment(p1, q2, q1)) return true; // p1, q1 and q2 are collinear and q2 lies on p1q1
+    if (o3 === 0 && onSegment(p2, p1, q2)) return true; // p2, q2 and p1 are collinear and p1 lies on p2q2
+    if (o4 === 0 && onSegment(p2, q1, q2)) return true; // p2, q2 and q1 are collinear and q1 lies on p2q2
+
+    return false;
+}
+
+// for collinear points p, q, r, check if point q lies on segment pr
+function onSegment(p, q, r) {
+    return q.x <= Math.max(p.x, r.x) && q.x >= Math.min(p.x, r.x) && q.y <= Math.max(p.y, r.y) && q.y >= Math.min(p.y, r.y);
+}
+
+function sign(num) {
+    return num > 0 ? 1 : num < 0 ? -1 : 0;
+}
+
+// check if a polygon diagonal intersects any polygon segments
+function intersectsPolygon(a, b) {
+    var p = a;
+    do {
+        if (p.i !== a.i && p.next.i !== a.i && p.i !== b.i && p.next.i !== b.i &&
+                intersects(p, p.next, a, b)) return true;
+        p = p.next;
+    } while (p !== a);
+
+    return false;
+}
+
+// check if a polygon diagonal is locally inside the polygon
+function locallyInside(a, b) {
+    return area(a.prev, a, a.next) < 0 ?
+        area(a, b, a.next) >= 0 && area(a, a.prev, b) >= 0 :
+        area(a, b, a.prev) < 0 || area(a, a.next, b) < 0;
+}
+
+// check if the middle point of a polygon diagonal is inside the polygon
+function middleInside(a, b) {
+    var p = a,
+        inside = false,
+        px = (a.x + b.x) / 2,
+        py = (a.y + b.y) / 2;
+    do {
+        if (((p.y > py) !== (p.next.y > py)) && p.next.y !== p.y &&
+                (px < (p.next.x - p.x) * (py - p.y) / (p.next.y - p.y) + p.x))
+            inside = !inside;
+        p = p.next;
+    } while (p !== a);
+
+    return inside;
+}
+
+// link two polygon vertices with a bridge; if the vertices belong to the same ring, it splits polygon into two;
+// if one belongs to the outer ring and another to a hole, it merges it into a single ring
+function splitPolygon(a, b) {
+    var a2 = new Node(a.i, a.x, a.y),
+        b2 = new Node(b.i, b.x, b.y),
+        an = a.next,
+        bp = b.prev;
+
+    a.next = b;
+    b.prev = a;
+
+    a2.next = an;
+    an.prev = a2;
+
+    b2.next = a2;
+    a2.prev = b2;
+
+    bp.next = b2;
+    b2.prev = bp;
+
+    return b2;
+}
+
+// create a node and optionally link it with previous one (in a circular doubly linked list)
+function insertNode(i, x, y, last) {
+    var p = new Node(i, x, y);
+
+    if (!last) {
+        p.prev = p;
+        p.next = p;
+
+    } else {
+        p.next = last.next;
+        p.prev = last;
+        last.next.prev = p;
+        last.next = p;
+    }
+    return p;
+}
+
+function removeNode(p) {
+    p.next.prev = p.prev;
+    p.prev.next = p.next;
+
+    if (p.prevZ) p.prevZ.nextZ = p.nextZ;
+    if (p.nextZ) p.nextZ.prevZ = p.prevZ;
+}
+
+function Node(i, x, y) {
+    // vertex index in coordinates array
+    this.i = i;
+
+    // vertex coordinates
+    this.x = x;
+    this.y = y;
+
+    // previous and next vertex nodes in a polygon ring
+    this.prev = null;
+    this.next = null;
+
+    // z-order curve value
+    this.z = 0;
+
+    // previous and next nodes in z-order
+    this.prevZ = null;
+    this.nextZ = null;
+
+    // indicates whether this is a steiner point
+    this.steiner = false;
+}
+
+// return a percentage difference between the polygon area and its triangulation area;
+// used to verify correctness of triangulation
+earcut.deviation = function (data, holeIndices, dim, triangles) {
+    var hasHoles = holeIndices && holeIndices.length;
+    var outerLen = hasHoles ? holeIndices[0] * dim : data.length;
+
+    var polygonArea = Math.abs(signedArea(data, 0, outerLen, dim));
+    if (hasHoles) {
+        for (var i = 0, len = holeIndices.length; i < len; i++) {
+            var start = holeIndices[i] * dim;
+            var end = i < len - 1 ? holeIndices[i + 1] * dim : data.length;
+            polygonArea -= Math.abs(signedArea(data, start, end, dim));
+        }
+    }
+
+    var trianglesArea = 0;
+    for (i = 0; i < triangles.length; i += 3) {
+        var a = triangles[i] * dim;
+        var b = triangles[i + 1] * dim;
+        var c = triangles[i + 2] * dim;
+        trianglesArea += Math.abs(
+            (data[a] - data[c]) * (data[b + 1] - data[a + 1]) -
+            (data[a] - data[b]) * (data[c + 1] - data[a + 1]));
+    }
+
+    return polygonArea === 0 && trianglesArea === 0 ? 0 :
+        Math.abs((trianglesArea - polygonArea) / polygonArea);
+};
+
+function signedArea(data, start, end, dim) {
+    var sum = 0;
+    for (var i = start, j = end - dim; i < end; i += dim) {
+        sum += (data[j] - data[i]) * (data[i + 1] + data[j + 1]);
+        j = i;
+    }
+    return sum;
+}
+
+// turn a polygon in a multi-dimensional array form (e.g. as in GeoJSON) into a form Earcut accepts
+earcut.flatten = function (data) {
+    var dim = data[0][0].length,
+        result = {vertices: [], holes: [], dimensions: dim},
+        holeIndex = 0;
+
+    for (var i = 0; i < data.length; i++) {
+        for (var j = 0; j < data[i].length; j++) {
+            for (var d = 0; d < dim; d++) result.vertices.push(data[i][j][d]);
+        }
+        if (i > 0) {
+            holeIndex += data[i - 1].length;
+            result.holes.push(holeIndex);
+        }
+    }
+    return result;
+};
+
+})();
+
+
+</script><script>
+/* ICGC orthophoto on OSM roof footprints. Walls remain the native neutral
+ * extrusions; flat roof surfaces use their render_height, not invented facades. */
+(() => {
+  'use strict';
+  const EARTH=40075016.68557849, EPS=1e-12;
+  const TILE_URL='https://geoserveis.icgc.cat/servei/catalunya/mapa-base/wmts/orto/MON3857NW/{z}/{x}/{y}.png';
+  const mercator=p=>{const lat=Math.max(-85.05112878,Math.min(85.05112878,Number(p[1])))*Math.PI/180;
+    return [(Number(p[0])+180)/360,(1-Math.log(Math.tan(Math.PI/4+lat/2))/Math.PI)/2];};
+  const latitude=y=>Math.atan(Math.sinh(Math.PI*(1-2*y)));
+  const unitsAt=y=>1/(EARTH*Math.cos(latitude(y)));
+  const hash=s=>{let h=2166136261;for(let i=0;i<s.length;i++)h=Math.imul(h^s.charCodeAt(i),16777619);return h>>>0;};
+
+  // Sutherland-Hodgman on an already triangulated convex surface. Holes are
+  // removed by Earcut before this clipping, so no rectangle can fill a courtyard.
+  function clip(points,rectangle){
+    let out=points.map(p=>p.slice());
+    for(const [axis,edge,sign] of [[0,rectangle[0],1],[0,rectangle[2],-1],[1,rectangle[1],1],[1,rectangle[3],-1]]){
+      const input=out;out=[];if(!input.length)break;
+      let a=input[input.length-1],insideA=sign*(a[axis]-edge)>=-EPS;
+      for(const b of input){const insideB=sign*(b[axis]-edge)>=-EPS;
+        if(insideA!==insideB){const t=(edge-a[axis])/(b[axis]-a[axis]);
+          out.push([a[0]+(b[0]-a[0])*t,a[1]+(b[1]-a[1])*t]);}
+        if(insideB)out.push(b.slice());a=b;insideA=insideB;
+      }
+    }return out;
+  }
+  function roofHeight(feature){const v=feature.properties?.render_height;
+    return v==null?5:Number.isFinite(Number(v))?Number(v):5;}
+  const intersects=(a,b)=>!b||(a[0]<=b[2]&&a[2]>=b[0]&&a[1]<=b[3]&&a[3]>=b[1]);
+
+  function buildMeshes(features,z,options={}){
+    const triangulate=options.earcut||window.earcut;
+    if(typeof triangulate!=='function')throw Error('Earcut no disponible');
+    const n=2**z,size=1/n,tiles=new Map(),seen=new Set();let roofs=0;
+    const filterBounds=options.bounds&&[mercator([options.bounds[0],options.bounds[3]]),mercator([options.bounds[2],options.bounds[1]])].flat();
+    const region=options.region&&[mercator([options.region[0],options.region[3]]),mercator([options.region[2],options.region[1]])].flat();
+    for(const feature of features||[]){
+      if(!feature.geometry||!['Polygon','MultiPolygon'].includes(feature.geometry.type))continue;
+      const height=roofHeight(feature);if(height<0)continue;
+      const key=height+'|'+JSON.stringify(feature.geometry);if(seen.has(key))continue;seen.add(key);
+      const polygons=feature.geometry.type==='Polygon'?[feature.geometry.coordinates]:feature.geometry.coordinates;
+      for(const polygon of polygons){
+        const rings=polygon.map(r=>{const points=r.map(mercator).filter(p=>p.every(Number.isFinite));
+          if(points.length>1&&points[0][0]===points.at(-1)[0]&&points[0][1]===points.at(-1)[1])points.pop();return points;}).filter(r=>r.length>=3);
+        if(!rings.length)continue;
+        const outer=rings[0],bbox=[Math.min(...outer.map(p=>p[0])),Math.min(...outer.map(p=>p[1])),Math.max(...outer.map(p=>p[0])),Math.max(...outer.map(p=>p[1]))];
+        if(!intersects(bbox,filterBounds)||!intersects(bbox,region))continue;
+        const flat=[],holes=[];for(let i=0;i<rings.length;i++){if(i)holes.push(flat.length/2);for(const p of rings[i])flat.push(...p);}
+        const indices=triangulate(flat,holes,2);if(!indices.length)continue;roofs++;
+        const elevation=(height+.12)*unitsAt((bbox[1]+bbox[3])/2);
+        for(let i=0;i<indices.length;i+=3){
+          const tri=indices.slice(i,i+3).map(index=>[flat[index*2],flat[index*2+1]]);
+          const xmin=Math.floor(Math.min(...tri.map(p=>p[0]))*n),xmax=Math.floor(Math.max(...tri.map(p=>p[0]))*n);
+          const ymin=Math.floor(Math.min(...tri.map(p=>p[1]))*n),ymax=Math.floor(Math.max(...tri.map(p=>p[1]))*n);
+          // A malformed planet-sized footprint must not request unbounded tiles.
+          if((xmax-xmin+1)*(ymax-ymin+1)>64)continue;
+          for(let x=xmin;x<=xmax;x++)for(let y=ymin;y<=ymax;y++){
+            if(x<0||y<0||x>=n||y>=n)continue;
+            const origin=[x*size,y*size],clipped=clip(tri,[origin[0],origin[1],origin[0]+size,origin[1]+size]);
+            if(clipped.length<3)continue;
+            const tileKey=z+'/'+x+'/'+y;let tile=tiles.get(tileKey);
+            if(!tile){tile={key:tileKey,z,x,y,origin,data:[]};tiles.set(tileKey,tile);}
+            for(let q=1;q<clipped.length-1;q++)for(const p of [clipped[0],clipped[q],clipped[q+1]])
+              tile.data.push(p[0]-origin[0],p[1]-origin[1],elevation,
+                Math.max(0,Math.min(1,(p[0]-origin[0])/size)),Math.max(0,Math.min(1,(p[1]-origin[1])/size)));
+          }
+        }
+      }
+      if(roofs>=(options.maxRoofs||2000))break;
+    }
+    const centre=options.center?mercator(options.center):[.5,.5];
+    const result=[...tiles.values()].sort((a,b)=>Math.hypot(a.origin[0]+size/2-centre[0],a.origin[1]+size/2-centre[1])-Math.hypot(b.origin[0]+size/2-centre[0],b.origin[1]+size/2-centre[1])).slice(0,options.maxTiles||64);
+    for(const tile of result){tile.signature=hash(JSON.stringify(tile.data));tile.data=new Float32Array(tile.data);tile.count=tile.data.length/5;}
+    return {tiles:result,roofs};
+  }
+  function translatedMatrix(matrix,origin){const m=Array.from(matrix);
+    for(let row=0;row<4;row++)m[12+row]=matrix[row]*origin[0]+matrix[4+row]*origin[1]+matrix[12+row];return new Float32Array(m);}
+
+  class SaltPhotoRoofs {
+    constructor(options={}){this.id=options.id||'salt-photo-roofs';this.type='custom';this.renderingMode='3d';
+      this.options=options;this.enabled=options.enabled!==false;this.source=options.source||'openmaptiles';
+      this.sourceLayer=options.sourceLayer||'building';this.tiles=new Map();this.frame=0;this.snapshot=null;
+      this.onChange=()=>this.requestRefresh();this.onSource=e=>{if(e.sourceId===this.source)this.requestRefresh();};}
+    onAdd(map,gl){this.map=map;this.gl=gl;
+      try{this.initGL();}catch(error){this.error=error.message;this.report();return;}
+      map.on('moveend',this.onChange);map.on('idle',this.onChange);map.on('sourcedata',this.onSource);this.requestRefresh();}
+    initGL(){const gl=this.gl,modern=typeof gl.createVertexArray==='function';
+      this.vaoApi=modern?{create:()=>gl.createVertexArray(),bind:v=>gl.bindVertexArray(v),remove:v=>gl.deleteVertexArray(v),binding:gl.VERTEX_ARRAY_BINDING}:
+        (()=>{const e=gl.getExtension('OES_vertex_array_object');return e&&{create:()=>e.createVertexArrayOES(),bind:v=>e.bindVertexArrayOES(v),remove:v=>e.deleteVertexArrayOES(v),binding:e.VERTEX_ARRAY_BINDING_OES};})();
+      if(!this.vaoApi)throw Error('No hi ha suport per a la textura dels terrats.');
+      const vertex=modern?'#version 300 es\nin vec3 a_position;in vec2 a_uv;out vec2 v_uv;':'attribute vec3 a_position;attribute vec2 a_uv;varying vec2 v_uv;';
+      const fragment=modern?'#version 300 es\nprecision mediump float;in vec2 v_uv;out vec4 color;':'precision mediump float;varying vec2 v_uv;';
+      const compile=(type,text)=>{const shader=gl.createShader(type);gl.shaderSource(shader,text);gl.compileShader(shader);
+        if(!gl.getShaderParameter(shader,gl.COMPILE_STATUS)){const error=gl.getShaderInfoLog(shader);gl.deleteShader(shader);throw Error(error);}return shader;};
+      const shaders=[compile(gl.VERTEX_SHADER,vertex+'uniform mat4 u_matrix;void main(){v_uv=a_uv;gl_Position=u_matrix*vec4(a_position,1.0);}'),
+        compile(gl.FRAGMENT_SHADER,fragment+'uniform sampler2D u_image;void main(){vec4 photo='+ (modern?'texture':'texture2D')+'(u_image,v_uv);if(photo.a<0.1)discard;'+(modern?'color':'gl_FragColor')+'=vec4(photo.rgb,1.0);}')];
+      const program=gl.createProgram();for(const s of shaders)gl.attachShader(program,s);gl.linkProgram(program);
+      for(const s of shaders)gl.deleteShader(s);
+      if(!gl.getProgramParameter(program,gl.LINK_STATUS)){const error=gl.getProgramInfoLog(program);gl.deleteProgram(program);throw Error(error);}
+      this.program=program;this.position=gl.getAttribLocation(program,'a_position');this.uv=gl.getAttribLocation(program,'a_uv');
+      this.matrix=gl.getUniformLocation(program,'u_matrix');this.sampler=gl.getUniformLocation(program,'u_image');}
+    setEnabled(value){const enabled=!!value;if(enabled===this.enabled)return;this.enabled=enabled;this.snapshot=null;
+      if(!enabled){if(this.frame)cancelAnimationFrame(this.frame);this.frame=0;this.clear();}else this.requestRefresh();this.map?.triggerRepaint();}
+    requestRefresh(){if(!this.enabled||!this.map||!this.program||this.frame)return;
+      this.frame=requestAnimationFrame(()=>{this.frame=0;this.refresh();});}
+    refresh(){if(!this.enabled||!this.map||!this.program)return;
+      if(this.map.getZoom()<14){this.clear();this.snapshot=null;return;}
+      if(typeof(window.earcut)!=='function'&&typeof(this.options.earcut)!=='function'){this.error='La capa de terrats necessita Earcut.';this.report();return;}
+      let features;try{features=this.map.querySourceFeatures(this.source,{sourceLayer:this.sourceLayer});}catch(_){return;}
+      const b=this.map.getBounds(),bounds=[b.getWest(),b.getSouth(),b.getEast(),b.getNorth()];
+      const z=Math.max(15,Math.min(17,Math.floor(this.map.getZoom())+1));
+      const signature=hash(JSON.stringify([z,bounds.map(v=>Math.round(v*10000)),features.map(f=>[f.geometry,roofHeight(f)])]));
+      if(signature===this.snapshot)return;this.snapshot=signature;
+      const result=buildMeshes(features,z,{earcut:this.options.earcut,center:this.map.getCenter().toArray(),bounds,
+        region:this.options.region||[2.75,41.94,2.835,42.01],maxTiles:this.options.maxTiles||64,maxRoofs:this.options.maxRoofs||2000});
+      const keys=new Set(result.tiles.map(t=>t.key));for(const [key,tile] of this.tiles)if(!keys.has(key)){this.release(tile);this.tiles.delete(key);}
+      for(const mesh of result.tiles){let tile=this.tiles.get(mesh.key);
+        if(!tile){tile={...mesh,texture:null,image:null,buffer:this.gl.createBuffer()};this.tiles.set(mesh.key,tile);this.loadTexture(tile);}
+        if(tile.signature!==mesh.signature||!tile.uploaded){Object.assign(tile,{data:mesh.data,count:mesh.count,signature:mesh.signature});
+          const previous=this.gl.getParameter(this.gl.ARRAY_BUFFER_BINDING);this.gl.bindBuffer(this.gl.ARRAY_BUFFER,tile.buffer);this.gl.bufferData(this.gl.ARRAY_BUFFER,tile.data,this.gl.STATIC_DRAW);this.gl.bindBuffer(this.gl.ARRAY_BUFFER,previous);tile.uploaded=true;}
+      }
+      this.roofs=result.roofs;this.error=null;this.report();this.map.triggerRepaint();}
+    loadTexture(tile){const image=new Image();tile.image=image;image.crossOrigin='anonymous';
+      image.onload=()=>{if(!this.enabled||!this.map||this.tiles.get(tile.key)!==tile)return;const gl=this.gl;
+        const active=gl.getParameter(gl.ACTIVE_TEXTURE);gl.activeTexture(gl.TEXTURE0);const previous=gl.getParameter(gl.TEXTURE_BINDING_2D),flip=gl.getParameter(gl.UNPACK_FLIP_Y_WEBGL),premultiply=gl.getParameter(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL);
+        try{tile.texture=gl.createTexture();gl.bindTexture(gl.TEXTURE_2D,tile.texture);gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,false);gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL,false);
+          gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);
+          gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);
+          gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,image);tile.loaded=true;
+        }catch(error){tile.failed=true;if(tile.texture)gl.deleteTexture(tile.texture);tile.texture=null;}
+        finally{gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,flip);gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL,premultiply);gl.bindTexture(gl.TEXTURE_2D,previous);gl.activeTexture(active);}
+        this.report();this.map?.triggerRepaint();};
+      image.onerror=()=>{if(this.tiles.get(tile.key)===tile){tile.failed=true;this.report();}};
+      image.src=(this.options.tileUrl||TILE_URL).replace('{z}',tile.z).replace('{x}',tile.x).replace('{y}',tile.y);}
+    render(gl,matrix){if(!this.enabled||!this.program||!this.tiles.size)return;
+      // MapLibre 4 passes the Mercator matrix; accept the newer projection object too.
+      const transform=matrix?.defaultProjectionData?.mainMatrix||matrix;if(!transform||transform.length!==16)return;
+      const previous={program:gl.getParameter(gl.CURRENT_PROGRAM),buffer:gl.getParameter(gl.ARRAY_BUFFER_BINDING),vao:gl.getParameter(this.vaoApi.binding),
+        active:gl.getParameter(gl.ACTIVE_TEXTURE),depth:gl.isEnabled(gl.DEPTH_TEST),depthFunc:gl.getParameter(gl.DEPTH_FUNC),depthMask:gl.getParameter(gl.DEPTH_WRITEMASK),blend:gl.isEnabled(gl.BLEND),cull:gl.isEnabled(gl.CULL_FACE)};
+      gl.activeTexture(gl.TEXTURE0);previous.texture=gl.getParameter(gl.TEXTURE_BINDING_2D);
+      try{if(!this.vao)this.vao=this.vaoApi.create();this.vaoApi.bind(this.vao);gl.useProgram(this.program);
+        gl.enable(gl.DEPTH_TEST);gl.depthFunc(gl.LEQUAL);gl.depthMask(true);gl.disable(gl.BLEND);gl.disable(gl.CULL_FACE);gl.uniform1i(this.sampler,0);
+        for(const tile of this.tiles.values()){if(!tile.loaded||!tile.texture||!tile.uploaded)continue;
+          gl.bindBuffer(gl.ARRAY_BUFFER,tile.buffer);gl.enableVertexAttribArray(this.position);gl.vertexAttribPointer(this.position,3,gl.FLOAT,false,20,0);
+          gl.enableVertexAttribArray(this.uv);gl.vertexAttribPointer(this.uv,2,gl.FLOAT,false,20,12);gl.bindTexture(gl.TEXTURE_2D,tile.texture);
+          gl.uniformMatrix4fv(this.matrix,false,translatedMatrix(transform,tile.origin));gl.drawArrays(gl.TRIANGLES,0,tile.count);}
+      }finally{this.vaoApi.bind(previous.vao);gl.bindBuffer(gl.ARRAY_BUFFER,previous.buffer);gl.bindTexture(gl.TEXTURE_2D,previous.texture);gl.activeTexture(previous.active);gl.useProgram(previous.program);
+        previous.depth?gl.enable(gl.DEPTH_TEST):gl.disable(gl.DEPTH_TEST);gl.depthFunc(previous.depthFunc);gl.depthMask(previous.depthMask);
+        previous.blend?gl.enable(gl.BLEND):gl.disable(gl.BLEND);previous.cull?gl.enable(gl.CULL_FACE):gl.disable(gl.CULL_FACE);}}
+    release(tile){if(tile.image){tile.image.onload=tile.image.onerror=null;tile.image.src='';}if(tile.buffer)this.gl.deleteBuffer(tile.buffer);if(tile.texture)this.gl.deleteTexture(tile.texture);}
+    clear(){for(const tile of this.tiles.values())this.release(tile);this.tiles.clear();if(this.vao){this.vaoApi.remove(this.vao);this.vao=null;}}
+    retry(){this.clear();this.snapshot=null;this.requestRefresh();}
+    report(){this.options.onStatus?.({loaded:[...this.tiles.values()].filter(t=>t.loaded).length,failed:[...this.tiles.values()].filter(t=>t.failed).length,
+      total:this.tiles.size,roofs:this.roofs||0,message:this.error||null});}
+    onRemove(){if(this.frame)cancelAnimationFrame(this.frame);this.frame=0;
+      if(this.map){this.map.off('moveend',this.onChange);this.map.off('idle',this.onChange);this.map.off('sourcedata',this.onSource);}
+      this.clear();if(this.program)this.gl.deleteProgram(this.program);this.program=null;this.map=null;}
+  }
+  SaltPhotoRoofs.geometry=Object.freeze({mercator,clip,buildMeshes,translatedMatrix,roofHeight,unitsAt});
+  window.SaltPhotoRoofs=SaltPhotoRoofs;
+})();
+
+</script><script>
 /* MapLibre perspective map with native building/actor extrusions. The adapter
  * retains the existing raster API and its accessible 2D SVG markers. */
 (() => {
@@ -644,6 +1502,7 @@ return maplibregl$1;
     constructor(el, options = {}) {
       this.el=el; this.options=options; this.ready=false; this.is3D=options.d3!==false;
       this.drawOverlay=()=>''; this.frame=0; this.scene=null; this.deckOverlay=null;
+      this.wheelFrame=0; this.wheelPitch=null;
       this.width=el.clientWidth; this.height=el.clientHeight;
       el.classList.add('vector-map');
       el.innerHTML='<div class="vector-canvas"></div><svg class="vector-overlay" xmlns="http://www.w3.org/2000/svg" aria-label="Actors del mapa 2D"></svg><div class="map-tooltip" role="status" hidden></div>';
@@ -668,7 +1527,8 @@ return maplibregl$1;
       this.gl.on('mousemove',e=>this.hover(e));
       this.gl.getCanvas().addEventListener('pointerleave',()=>{this.tooltip.hidden=true;});
       this.gl.getCanvas().addEventListener('pointerdown',()=>options.onInteraction?.());
-      this.gl.getCanvas().addEventListener('wheel',()=>options.onInteraction?.(),{passive:true});
+      this.gl.getCanvas().addEventListener('wheel',e=>this.handleWheel(e),{passive:false,capture:true});
+      this.configureWheel();
       this.loadingTimer=setTimeout(()=>{if(!this.ready){this.lastError='El fons vectorial encara no s’ha carregat.';this.reportStatus();}},15000);
       if(window.ResizeObserver){this.observer=new ResizeObserver(()=>this.resize());this.observer.observe(el);}
       this.syncCamera();
@@ -676,10 +1536,12 @@ return maplibregl$1;
     initLayers(){
       this.ready=true; this.dirty=true; clearTimeout(this.loadingTimer); this.lastError=null;
       const m=this.gl, before=m.getStyle().layers.find(l=>l.type==='symbol')?.id;
+      m.addSource('salt-ortho',{type:'raster',tiles:['https://geoserveis.icgc.cat/servei/catalunya/mapa-base/wmts/orto/MON3857NW/{z}/{x}/{y}.png'],tileSize:256,minzoom:12,maxzoom:19,bounds:[2.75,41.94,2.835,42.01],attribution:'Imatge derivada de l’ortofoto de Catalunya © <a href="https://www.icgc.cat/" target="_blank" rel="noopener">ICGC</a> · <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a>'});
+      m.addLayer({id:'salt-aerial',type:'raster',source:'salt-ortho',minzoom:12,layout:{visibility:this.scene?.photo!==false?'visible':'none'},paint:{'raster-fade-duration':0}},before);
       // The vector source supplies OSM building heights, with a 5 m visual
       // approximation when render_height is absent. Actor columns are symbols.
       if(m.getSource('openmaptiles'))m.addLayer({id:'salt-buildings',type:'fill-extrusion',source:'openmaptiles','source-layer':'building',minzoom:14,
-        paint:{'fill-extrusion-color':'#dcd9d2','fill-extrusion-height':['coalesce',['get','render_height'],5],
+        paint:{'fill-extrusion-color':'#c9c5bd','fill-extrusion-height':['coalesce',['get','render_height'],5],
           'fill-extrusion-base':['coalesce',['get','render_min_height'],0],'fill-extrusion-opacity':.62}},before);
       for(const id of ['salt-columns','salt-caps','salt-terme','salt-seccions','salt-rings','salt-ground','salt-fallback-arcs'])m.addSource(id,{type:'geojson',data:empty()});
       m.addLayer({id:'salt-ist-fill',type:'fill',source:'salt-seccions',paint:{'fill-color':['get','c'],'fill-opacity':.48}},before);
@@ -693,6 +1555,7 @@ return maplibregl$1;
       m.addLayer({id:'salt-fallback-lines',type:'line',source:'salt-fallback-arcs',paint:{'line-color':['get','c'],'line-width':2,'line-opacity':.75}});
       const paint=opacity=>({'fill-extrusion-color':['case',['==',['get','selected'],1],'#193d5d',['get','c']],
         'fill-extrusion-height':['get','h'],'fill-extrusion-base':0,'fill-extrusion-opacity':opacity,'fill-extrusion-vertical-gradient':true});
+      if(window.SaltPhotoRoofs){this.photoRoofs=new SaltPhotoRoofs({enabled:false,onStatus:status=>{this.el.dataset.roofs=String(status.roofs);this.el.dataset.roofTiles=String(status.loaded);this.el.dataset.roofFailed=String(status.failed);this.roofStatus=status;this.options.onPhotoStatus?.(status);}});m.addLayer(this.photoRoofs);}
       m.addLayer({id:'salt-actors-verified',type:'fill-extrusion',source:'salt-columns',filter:['==',['get','hip'],0],paint:paint(.93)});
       m.addLayer({id:'salt-actors-pending',type:'fill-extrusion',source:'salt-columns',filter:['==',['get','hip'],1],paint:paint(.45)});
       m.addLayer({id:'salt-pending-outline',type:'line',source:'salt-columns',filter:['==',['get','hip'],1],paint:{'line-color':'#2b6cd6','line-width':1.4,'line-dasharray':[2,1.5]}});
@@ -703,12 +1566,43 @@ return maplibregl$1;
       this.schedule(); this.reportStatus();
     }
     setOverlay(fn){this.drawOverlay=fn;this.schedule();}
-    setScene(scene){this.scene=scene;this.dirty=true;this.is3D=scene.d3!==false;this.syncCamera();this.schedule();}
+    setScene(scene){this.scene=scene;this.dirty=true;const d3=scene.d3!==false;
+      if(d3!==this.is3D){this.is3D=d3;this.configureWheel();}
+      this.syncCamera();this.schedule();}
+    configureWheel(){
+      if(this.wheelFrame){cancelAnimationFrame(this.wheelFrame);this.wheelFrame=0;}
+      this.wheelPitch=null;
+      if(this.is3D)this.gl.scrollZoom.disable();else this.gl.scrollZoom.enable();
+    }
+    handleWheel(e){
+      // Controls, legends and the resource drawer are siblings of this canvas.
+      // A canvas-only listener also leaves scrolling in those surfaces intact.
+      if(e.target!==this.gl.getCanvas())return;
+      this.options.onInteraction?.();
+      if(!this.is3D)return;
+      e.preventDefault();e.stopPropagation();
+      const unit=e.deltaMode===1?16:e.deltaMode===2?(this.height||800):1;
+      const pixels=Number(e.deltaY)*unit;
+      if(!Number.isFinite(pixels)||pixels===0)return;
+      this.gl.stop();
+      const limit=matchMedia('(max-width:850px)').matches?40:70;
+      const previous=this.wheelPitch??this.gl.getPitch();
+      // Normalize mouse lines/pages to pixels; cap isolated large notches and
+      // accumulate trackpad events until the next animation frame.
+      this.wheelPitch=Math.max(0,Math.min(limit,previous-Math.max(-240,Math.min(240,pixels))*.05));
+      if(this.wheelFrame)return;
+      this.wheelFrame=requestAnimationFrame(()=>{
+        this.wheelFrame=0;const pitch=this.wheelPitch;this.wheelPitch=null;
+        if(!this.is3D||pitch===null)return;
+        this.gl.setPitch(pitch);this.syncCamera();
+      });
+    }
     syncCamera(){
       this.center=this.gl.getCenter().toArray(); this.zoom=this.gl.getZoom();
       this.el.dataset.mode=this.is3D?'3d':'2d';
       this.el.dataset.pitch=String(Math.round(this.gl.getPitch()));
       this.el.dataset.bearing=String(Math.round(this.gl.getBearing()));
+      this.el.dataset.zoom=String(this.zoom);
       this.el.dataset.engine='maplibre';
     }
     camera(){return {center:this.gl.getCenter().toArray(),zoom:this.gl.getZoom(),pitch:this.gl.getPitch(),bearing:this.gl.getBearing()};}
@@ -735,6 +1629,9 @@ return maplibregl$1;
       m.getSource('salt-seccions').setData({type:'FeatureCollection',features:s.seccions.features.map(f=>({...f,properties:{...f.properties,c:s.istColor(f.properties.ist_2023)}}))});
       m.getSource('salt-rings').setData(s.rings);
       for(const id of ['salt-buildings','salt-actors-verified','salt-actors-pending','salt-pending-outline','salt-cap-landmarks','salt-terme-outline','salt-ground-solid','salt-ground-dashed','salt-ground-dotted'])this.visible(id,this.is3D);
+      this.visible('salt-aerial',s.photo!==false);this.visible('salt-buildings',this.is3D&&s.buildings!==false);
+      this.photoRoofs?.setEnabled(this.is3D&&s.photo!==false&&s.buildings!==false);
+      this.el.dataset.photo=String(s.photo!==false);this.el.dataset.buildings=String(this.is3D&&s.buildings!==false);
       this.visible('salt-ist-fill',this.is3D&&s.layer==='ist');this.visible('salt-ist-outline',this.is3D&&s.layer==='ist');
       this.visible('salt-ring-lines',this.is3D&&s.layer==='distance');
       const hasDeck=!!this.deckOverlay;
@@ -785,6 +1682,7 @@ return maplibregl$1;
       clearTimeout(this.loadingTimer);this.loadingTimer=setTimeout(()=>{if(!this.ready){this.lastError='El fons vectorial encara no s’ha carregat.';this.reportStatus();}},15000);
     }
     async exportCanvas(){
+      if(this.photoRoofs?.enabled&&this.photoRoofs.tiles.size&&[...this.photoRoofs.tiles.values()].some(tile=>!tile.loaded&&!tile.failed))throw Error('Espera que es carreguin les imatges dels terrats abans d’exportar.');
       if(!this.ready||!this.gl.areTilesLoaded())throw Error('Espera que es carregui el mapa abans d’exportar.');
       const source=this.gl.getCanvas(),c=document.createElement('canvas');c.width=source.width;c.height=source.height;
       const ctx=c.getContext('2d');ctx.drawImage(source,0,0);
@@ -845,7 +1743,7 @@ const col={'Politicoinstitucional':'#697789','Salut':'#cf4556','Serveis municipa
 const short={'Politicoinstitucional':'Institucions','Salut':'Salut','Serveis municipals i socials':'Serveis municipals i socials','Educació':'Educació','Tercer sector':'Tercer sector','Comunitat, cultura, esport i gent gran':'Comunitat, cultura i esport','Diversitat cultural, religiosa i de gènere':'Diversitat i comunitats','Població no organitzada':'Veïnat no organitzat'};
 const supportLabel={public:'Font pública citada',mixt:'Fonts públiques i internes',intern:'Font interna no revisada',proposta:'Hipòtesi pendent'};
 const views={portada:'#cover-view',ambit:'#scope-view',mapa:'#map-view',xarxa:'#network-view',directori:'#directory-view',pla:'#plan-view',revisio:'#review-view'};
-let state={view:'portada',topic:'portada',layout:'entorn',q:'',spheres:new Set(Object.keys(col)),territory:'',review:'',selected:null,focus:null,layer:'actors',internal:true,proposals:true,structural:true,networkMode:'focus',d3:true,arcs:false,camera:null};
+let state={view:'portada',topic:'portada',layout:'entorn',q:'',spheres:new Set(Object.keys(col)),territory:'',review:'',selected:null,focus:null,layer:'actors',internal:true,proposals:true,structural:true,networkMode:'focus',d3:true,arcs:false,photo:true,buildings:true,camera:null};
 const presets={
  portada:{view:'portada',title:'Què és aquest visor?'},
  actors:{view:'mapa',title:'On són els actors comunitaris?'},
@@ -864,7 +1762,7 @@ const presets={
 function topicForView(v){return Object.keys(presets).find(k=>presets[k].view===v)||'actors'}
 function setPreset(k){const p=presets[k];if(!p)return;state.topic=k;state.camera=null;state.q='';state.territory='';state.review='';state.selected=null;state.focus=p.view==='xarxa'?'S04':null;state.networkMode='focus';state.spheres=new Set(p.spheres||Object.keys(col));state.layer=p.layer||'actors';$('#drawer').hidden=true;$('#result-details').open=false;$('#filter-details').open=false;syncControls();showView(p.view);if(map&&p.view==='mapa')applyMapCamera();if(matchMedia('(max-width:850px)').matches){$('#sidebar').classList.remove('open');$('#toggle-sidebar').setAttribute('aria-expanded','false')}}
 function syncNavigation(){const k=presets[state.topic]&&presets[state.topic].view===state.view?state.topic:topicForView(state.view);$$('[data-preset]').forEach(b=>{const active=b.dataset.preset===k;b.classList.toggle('active',active);b.setAttribute('aria-current',active?'page':'false')});$('#explore-controls').hidden=['portada','ambit','revisio','pla'].includes(state.view);$('#header-png').disabled=!['mapa','xarxa'].includes(state.view);document.title=presets[k].title+' · Sociograma CAP Salt';}
-function renderCover(){const geo=A.filter(a=>a.lat!==null).length,hyp=R.filter(r=>r.suport==='proposta').length;$('#cover-content').innerHTML=`<h2>Sociograma comunitari del territori dels CAP Salt 1 i Salt 2</h2><p class="subt">Salt urbà · ICS Girona · octubre de 2026 <span class="badge hypothesis">Document de treball per validar amb l'equip</span></p><h3>Què és</h3><p>Un mapa d'actors i relacions del municipi de Salt per orientar la salut comunitària dels dos CAP. Recull <b>${A.length} fitxes</b> (${geo} ubicades) i <b>${R.length} registres de relació</b>, amb ${hyp} hipòtesis pendents de validar. Les fitxes representen entitats, serveis, programes i col·lectius; no són un recompte d'entitats úniques.</p><p>El territori de treball és Salt urbà i els CAP Salt 1 —Jordi Nadal— i Salt 2 —Alfons Moré—. Els pobles de l'EAP queden fora de la població diana; es mantenen els recursos externs que poden donar suport a Salt.</p><div class="cover-actions"><button class="btn primary" data-preset="actors">Comença: on són els actors comunitaris? →</button><button class="btn" data-preset="xarxa">Explora les relacions</button></div><h3>Mètode Alberich</h3><p>Cada actor té una <b>forma</b> (triangle: institució; rectangle: servei o actor organitzat; cercle: col·lectiu no organitzat), un <b>nivell</b> (polític, tècnic o social) i una <b>esfera</b>. A la xarxa pots explorar l'entorn d'un actor o ordenar-lo pels nivells d'Alberich. La posició dels nodes facilita la lectura; no mesura influència.</p><h3>Com llegir-lo</h3><p>Cada vista respon una pregunta del menú de l'esquerra. El mapa situa els recursos; la xarxa mostra els vincles, inclosos els programes sense seu. En 3D, les columnes de color situen els actors i els CAP són fites vermelles. Activa <b>Vincles al mapa</b> per veure els arcs elevats; els filtres es mantenen. Gira i inclina la càmera, alterna <b>2D/3D</b> o activa la <b>Presentació</b>. Fes clic en una columna o un punt per obrir la fitxa i en <b>Explora vincles</b> per seguir-ne les connexions. Si diverses fitxes comparteixen coordenades, un número les agrupa.</p><p><span class="badge measure">Font pública</span> Verd: font pública citada. Taronja: informació interna pendent de contrastar. <span class="badge hypothesis">Hipòtesi</span> Blau discontinu: proposta pendent de validar. Gris de punts: pertinença o seu. Vermell: conflicte. Un desconegut no es representa com un zero.</p><h3>Fonts i revisió</h3><p>Base documental aportada i revisió selectiva de ${D.fonts_revisades.length} fonts públiques el 8 d'octubre de 2026. Cada fitxa conserva les seves fonts i dates. El fons de carrers és d'OpenStreetMap; el context territorial conserva les seccions INE i l'IST 2023 de la base.</p><h3>Límits que cal tenir presents</h3><ul><li>El repartiment oficial de carrers entre Salt 1 i Salt 2 continua pendent de documentació. Consulta la vista de territori.</li><li>Les distàncies són en línia recta, no temps a peu ni zones d'adscripció.</li><li>L'IST descriu la secció censal; no les persones ni els actors que hi ha.</li><li>La falta d'una relació a la base no acredita aïllament. Els vincles interns i les hipòtesis es conserven amb l'estat visible.</li><li>Horaris, places, idiomes, accessibilitat i continuïtat dels programes s'han de confirmar amb els responsables.</li></ul><h3>Del mapa a l'acció</h3><p>Utilitza el directori per trobar portes d'entrada i el planificador per preparar una activitat amb els actors seleccionats. Les propostes s'han de concretar amb la comunitat i no impliquen acords ja assolits.</p><div class="cover-actions"><button class="btn" data-preset="pla">Planifica una activitat</button><button class="btn" data-preset="validar">Fonts i pendents de validació</button></div><h3>Descàrregues</h3><div class="action-row"><button class="text-button" data-action="all-actors">Actors CSV</button><button class="text-button" data-action="all-relations">Relacions CSV</button><button class="text-button" data-action="all-sources">Fonts CSV</button><button class="text-button" data-action="export-registry">Registre municipal CSV</button></div><p class="small-note">Mapa base © col·laboradors d'OpenStreetMap. Xarxa: Cytoscape.js. Interfície en català.</p>`}
+function renderCover(){const geo=A.filter(a=>a.lat!==null).length,hyp=R.filter(r=>r.suport==='proposta').length;$('#cover-content').innerHTML=`<h2>Sociograma comunitari del territori dels CAP Salt 1 i Salt 2</h2><p class="subt">Salt urbà · ICS Girona · octubre de 2026 <span class="badge hypothesis">Document de treball per validar amb l'equip</span></p><h3>Què és</h3><p>Un mapa d'actors i relacions del municipi de Salt per orientar la salut comunitària dels dos CAP. Recull <b>${A.length} fitxes</b> (${geo} ubicades) i <b>${R.length} registres de relació</b>, amb ${hyp} hipòtesis pendents de validar. Les fitxes representen entitats, serveis, programes i col·lectius; no són un recompte d'entitats úniques.</p><p>El territori de treball és Salt urbà i els CAP Salt 1 —Jordi Nadal— i Salt 2 —Alfons Moré—. Els pobles de l'EAP queden fora de la població diana; es mantenen els recursos externs que poden donar suport a Salt.</p><div class="cover-actions"><button class="btn primary" data-preset="actors">Comença: on són els actors comunitaris? →</button><button class="btn" data-preset="xarxa">Explora les relacions</button></div><h3>Mètode Alberich</h3><p>Cada actor té una <b>forma</b> (triangle: institució; rectangle: servei o actor organitzat; cercle: col·lectiu no organitzat), un <b>nivell</b> (polític, tècnic o social) i una <b>esfera</b>. A la xarxa pots explorar l'entorn d'un actor o ordenar-lo pels nivells d'Alberich. La posició dels nodes facilita la lectura; no mesura influència.</p><h3>Com llegir-lo</h3><p>Cada vista respon una pregunta del menú de l'esquerra. El mapa situa els recursos; la xarxa mostra els vincles, inclosos els programes sense seu. En 3D, les columnes de color situen els actors i els CAP són fites vermelles. Activa <b>Vincles al mapa</b> per veure els arcs elevats; els filtres es mantenen. Gira i inclina la càmera, alterna <b>2D/3D</b> o activa la <b>Presentació</b>. Fes clic en una columna o un punt per obrir la fitxa i en <b>Explora vincles</b> per seguir-ne les connexions. En 3D, la roda inclina el mapa quan el cursor és sobre el mapa; els botons +/− controlen el zoom. <b>Imatge aèria · ICGC</b> activa o desactiva l’ortofoto i la seva projecció sobre terrats plans. <b>Edificis 3D</b> permet amagar els volums. Les parets són esquemàtiques; l’enllaç <b>Façanes</b> obre les panoràmiques oficials al visor del ICGC. En 2D, si diverses fitxes comparteixen coordenades, un número les agrupa.</p><p><span class="badge measure">Font pública</span> Verd: font pública citada. Taronja: informació interna pendent de contrastar. <span class="badge hypothesis">Hipòtesi</span> Blau discontinu: proposta pendent de validar. Gris de punts: pertinença o seu. Vermell: conflicte. Un desconegut no es representa com un zero.</p><h3>Fonts i revisió</h3><p>Base documental aportada i revisió selectiva de ${D.fonts_revisades.length} fonts públiques el 8 d'octubre de 2026. Cada fitxa conserva les seves fonts i dates. El fons de carrers és d'OpenStreetMap i la imatge aèria, activable, del ICGC sota CC BY 4.0; el context territorial conserva les seccions INE i l'IST 2023 de la base.</p><h3>Límits que cal tenir presents</h3><ul><li>El repartiment oficial de carrers entre Salt 1 i Salt 2 continua pendent de documentació. Consulta la vista de territori.</li><li>Les distàncies són en línia recta, no temps a peu ni zones d'adscripció.</li><li>L'IST descriu la secció censal; no les persones ni els actors que hi ha.</li><li>La falta d'una relació a la base no acredita aïllament. Els vincles interns i les hipòtesis es conserven amb l'estat visible.</li><li>Horaris, places, idiomes, accessibilitat i continuïtat dels programes s'han de confirmar amb els responsables.</li></ul><h3>Del mapa a l'acció</h3><p>Utilitza el directori per trobar portes d'entrada i el planificador per preparar una activitat amb els actors seleccionats. Les propostes s'han de concretar amb la comunitat i no impliquen acords ja assolits.</p><div class="cover-actions"><button class="btn" data-preset="pla">Planifica una activitat</button><button class="btn" data-preset="validar">Fonts i pendents de validació</button></div><h3>Descàrregues</h3><div class="action-row"><button class="text-button" data-action="all-actors">Actors CSV</button><button class="text-button" data-action="all-relations">Relacions CSV</button><button class="text-button" data-action="all-sources">Fonts CSV</button><button class="text-button" data-action="export-registry">Registre municipal CSV</button></div><p class="small-note">Mapa base © col·laboradors d'OpenStreetMap. Xarxa: Cytoscape.js. Interfície en català.</p>`}
 function renderTerritory(){$('#territory-content').innerHTML=`<h2>Quin territori cobreix cada CAP?</h2><p class="subt">Salt 1 i Salt 2 · adscripció oficial pendent de documentar</p><h3>El que delimita aquest sociograma</h3><p>${esc(D.meta.abast)}</p><h3>El repartiment entre els dos centres</h3><p>${esc(D.meta.delimitacio)}</p><div class="notice warn"><b>Pendent de validar amb l'ICS:</b> el carrer, número o UBA assignat a cada CAP i els denominadors de població de Salt urbà. Els polígons de proximitat no substitueixen aquesta informació.</div><h3>Dos punts de referència</h3><div class="grid"><article class="card"><h3>CAP Salt 1 · Jordi Nadal</h3><p>${esc(byId.S01.adreca)}</p><button class="btn" data-map-actor="S01">Situa Salt 1 al mapa</button></article><article class="card"><h3>CAP Salt 2 · Alfons Moré</h3><p>${esc(byId.S02.adreca)}</p><button class="btn" data-map-actor="S02">Situa Salt 2 al mapa</button></article></div><h3>Què permet la vista de proximitat</h3><p>Compara distàncies en línia recta i anells de 500 i 1.000 metres. És una ajuda per explorar la ubicació dels recursos; no determina a quin CAP està assignada una persona ni la durada del trajecte.</p><div class="cover-actions"><button class="btn primary" data-preset="distancia">Explora la distància als CAP →</button><button class="btn" data-preset="validar">Què cal validar amb l'equip?</button></div>`}
 let map=null,mapReady=false,cy=null,storageOk=true,toastTimer,presentationTimer=null;
 const KEY='salt-sociograma-pla-v2';
@@ -888,8 +1786,8 @@ function networkData(){
   return {aa,rr,unlinked,focus,context:aa.filter(a=>!selectedIds.has(a.id)).length};
 }
 
-function updateHash(){const p=new URLSearchParams();p.set('view',state.view);p.set('topic',state.topic);if(state.layout!=='entorn')p.set('layout',state.layout);if(state.q)p.set('q',state.q);if(state.spheres.size!==Object.keys(col).length)p.set('s',Array.from(state.spheres).map(s=>Object.keys(col).indexOf(s)).join(','));if(state.territory)p.set('t',state.territory);if(state.review)p.set('r',state.review);if(state.selected)p.set('id',state.selected);if(state.focus)p.set('focus',state.focus);if(state.layer!=='actors')p.set('layer',state.layer);p.set('internal',state.internal?'1':'0');p.set('proposals',state.proposals?'1':'0');p.set('structural',state.structural?'1':'0');p.set('network',state.networkMode);p.set('d3',state.d3?'1':'0');if(state.arcs)p.set('arcs','1');if(state.view==='mapa'&&state.camera){const c=state.camera;p.set('cam',[...c.center,c.zoom,c.pitch,c.bearing].map((n,i)=>n.toFixed(i<2?6:2)).join(','))}try{history.replaceState(null,'','#'+p.toString())}catch(e){}}
-function readHash(){const p=new URLSearchParams(location.hash.slice(1));state.d3=p.get('d3')!=='0';state.arcs=p.get('arcs')==='1';state.camera=null;const c=(p.get('cam')||'').split(',').map(Number);if(c.length===5&&c.every(Number.isFinite)&&Math.abs(c[0])<=180&&Math.abs(c[1])<=85&&c[2]>=10&&c[2]<=19&&c[3]>=0&&c[3]<=70&&Math.abs(c[4])<=360)state.camera={center:c.slice(0,2),zoom:c[2],pitch:c[3],bearing:c[4]};if(views[p.get('view')])state.view=p.get('view');state.topic=presets[p.get('topic')]?p.get('topic'):topicForView(state.view);state.layout=p.get('layout')==='nivells'?'nivells':'entorn';state.q=p.get('q')||'';state.spheres=p.has('s')?new Set((p.get('s')||'').split(',').filter(v=>/^\d+$/.test(v)).map(n=>Object.keys(col)[+n]).filter(Boolean)):new Set(Object.keys(col));state.territory=['Salt','Recurs extern per a Salt','Sense seu geolocalitzada'].includes(p.get('t'))?p.get('t'):'';state.review=['fresh','pending'].includes(p.get('r'))?p.get('r'):'';state.selected=byId[p.get('id')]?p.get('id'):null;state.focus=byId[p.get('focus')]?p.get('focus'):null;state.layer=['actors','ist','distance'].includes(p.get('layer'))?p.get('layer'):'actors';if(!p.has('topic')&&state.view==='mapa')state.topic=state.layer==='ist'?'ist':state.layer==='distance'?'distancia':'actors';state.internal=p.get('internal')!=='0';state.proposals=p.get('proposals')!=='0';state.structural=p.get('structural')!=='0';state.networkMode=p.get('network')==='all'?'all':'focus';if(p.has('v')&&!p.has('view')){const k=p.get('v')==='zones'?'ambit':p.get('v'),preset=presets[k];if(preset){state.topic=k;state.view=preset.view;state.spheres=new Set(preset.spheres||Object.keys(col));state.layer=preset.layer||'actors'}}}
+function updateHash(){const p=new URLSearchParams();p.set('view',state.view);p.set('topic',state.topic);if(state.layout!=='entorn')p.set('layout',state.layout);if(state.q)p.set('q',state.q);if(state.spheres.size!==Object.keys(col).length)p.set('s',Array.from(state.spheres).map(s=>Object.keys(col).indexOf(s)).join(','));if(state.territory)p.set('t',state.territory);if(state.review)p.set('r',state.review);if(state.selected)p.set('id',state.selected);if(state.focus)p.set('focus',state.focus);if(state.layer!=='actors')p.set('layer',state.layer);p.set('internal',state.internal?'1':'0');p.set('proposals',state.proposals?'1':'0');p.set('structural',state.structural?'1':'0');p.set('network',state.networkMode);p.set('d3',state.d3?'1':'0');p.set('photo',state.photo?'1':'0');if(!state.buildings)p.set('buildings','0');if(state.arcs)p.set('arcs','1');if(state.view==='mapa'&&state.camera){const c=state.camera;p.set('cam',[...c.center,c.zoom,c.pitch,c.bearing].map((n,i)=>n.toFixed(i<2?6:2)).join(','))}try{history.replaceState(null,'','#'+p.toString())}catch(e){}}
+function readHash(){const p=new URLSearchParams(location.hash.slice(1));state.d3=p.get('d3')!=='0';state.photo=p.get('photo')!=='0';state.buildings=p.get('buildings')!=='0';state.arcs=p.get('arcs')==='1';state.camera=null;const c=(p.get('cam')||'').split(',').map(Number);if(c.length===5&&c.every(Number.isFinite)&&Math.abs(c[0])<=180&&Math.abs(c[1])<=85&&c[2]>=10&&c[2]<=19&&c[3]>=0&&c[3]<=70&&Math.abs(c[4])<=360)state.camera={center:c.slice(0,2),zoom:c[2],pitch:c[3],bearing:c[4]};if(views[p.get('view')])state.view=p.get('view');state.topic=presets[p.get('topic')]?p.get('topic'):topicForView(state.view);state.layout=p.get('layout')==='nivells'?'nivells':'entorn';state.q=p.get('q')||'';state.spheres=p.has('s')?new Set((p.get('s')||'').split(',').filter(v=>/^\d+$/.test(v)).map(n=>Object.keys(col)[+n]).filter(Boolean)):new Set(Object.keys(col));state.territory=['Salt','Recurs extern per a Salt','Sense seu geolocalitzada'].includes(p.get('t'))?p.get('t'):'';state.review=['fresh','pending'].includes(p.get('r'))?p.get('r'):'';state.selected=byId[p.get('id')]?p.get('id'):null;state.focus=byId[p.get('focus')]?p.get('focus'):null;state.layer=['actors','ist','distance'].includes(p.get('layer'))?p.get('layer'):'actors';if(!p.has('topic')&&state.view==='mapa')state.topic=state.layer==='ist'?'ist':state.layer==='distance'?'distancia':'actors';state.internal=p.get('internal')!=='0';state.proposals=p.get('proposals')!=='0';state.structural=p.get('structural')!=='0';state.networkMode=p.get('network')==='all'?'all':'focus';if(p.has('v')&&!p.has('view')){const k=p.get('v')==='zones'?'ambit':p.get('v'),preset=presets[k];if(preset){state.topic=k;state.view=preset.view;state.spheres=new Set(preset.spheres||Object.keys(col));state.layer=preset.layer||'actors'}}}
 function closeDrawer(){state.selected=null;$('#drawer').hidden=true;$$('.actor-card').forEach(x=>x.classList.remove('selected'));updateHash();if(state.view==='mapa')renderMap();resize()}
 function resize(){requestAnimationFrame(()=>{if(map)map.resize();if(cy)cy.resize()})}
 function renderSidebar(){const focus=state.view==='xarxa'?effectiveFocus():null;let aa=focus?[byId[focus],...networkData().aa.filter(a=>a.id!==focus)]:filterActors();$('#result-count').textContent=focus?`${aa.length-1} recursos relacionats`:`${aa.length} fitxes`;$('#filter-total').textContent=state.spheres.size===8?'':`(${state.spheres.size}/8)`;$('#actor-list').innerHTML=aa.length?aa.map(a=>`<button class="actor-card ${state.selected===a.id?'selected':''}" data-open="${a.id}"><span class="sphere-dot" style="--color:${col[a.esfera]}"></span><span><strong>${esc(a.nom)}</strong><small>${esc(short[a.esfera])} · ${a.lat===null?'sense punt al mapa':a.territori==='Salt'?'Salt':'recurs extern'}</small>${a.estat_verificacio!=='verificat'?'<span class="badge warn">Per validar</span>':''}</span></button>`).join(''):'<div class="empty">No hi ha resultats amb aquests filtres.<br><button class="text-button" data-action="reset">Neteja els filtres</button></div>';$('#sphere-filters').innerHTML=Object.keys(col).map(s=>`<label class="filter-row"><input type="checkbox" data-sphere="${esc(s)}" ${state.spheres.has(s)?'checked':''}><span class="sphere-dot" style="--color:${col[s]}"></span><span>${esc(short[s])}</span><small>${A.filter(a=>a.esfera===s).length}</small></label>`).join('')}
@@ -915,20 +1813,20 @@ function features(){
 const CAM={actors:{center:[2.7915,41.9738],zoom:15,pitch:58,bearing:-22},salut:{center:[2.7901,41.9736],zoom:15.4,pitch:60,bearing:-35},tercer:{center:[2.792,41.9741],zoom:15.2,pitch:60,bearing:-25},educatiu:{center:[2.7915,41.9738],zoom:15,pitch:55,bearing:20},diversitat:{center:[2.7915,41.9738],zoom:15.1,pitch:58,bearing:-8},ist:{center:[2.7893,41.974],zoom:14.8,pitch:52,bearing:-10},distancia:{center:[2.7893,41.974],zoom:14.8,pitch:55,bearing:-22}};
 function cameraForTopic(){let c={...(state.camera||CAM[state.topic]||CAM.actors)};if(matchMedia('(max-width:850px)').matches){c.pitch=Math.min(c.pitch,40);if(!state.camera)c.zoom-=.4}if(!state.d3){c.pitch=0;c.bearing=0}return c}
 function applyMapCamera(){if(map)map.easeTo(cameraForTopic())}
-function sync3DControls(){const b=$('#toggle-3d');b.textContent=state.d3?'3D':'2D';b.setAttribute('aria-pressed',String(state.d3));b.title=state.d3?'Vista 3D activa: passa a 2D':'Vista 2D activa: passa a 3D';$('#map-arcs').checked=state.arcs;$('#map-pitch').disabled=!state.d3;$('#rotate-left').disabled=!state.d3;$('#rotate-right').disabled=!state.d3;$('#map-pitch').value=Math.round(state.camera?.pitch||CAM[state.topic]?.pitch||58)}
+function sync3DControls(){const b=$('#toggle-3d');b.textContent=state.d3?'3D':'2D';b.setAttribute('aria-pressed',String(state.d3));b.title=b.disabled?'Aquest navegador utilitza el mapa 2D':state.d3?'Vista 3D activa: passa a 2D':'Vista 2D activa: passa a 3D';$('#map-arcs').checked=state.arcs;$('#map-photo').checked=!!map?.setScene&&state.photo;$('#map-photo').disabled=!map?.setScene;$('#map-buildings').checked=!!map?.setScene&&state.buildings;$('#map-buildings').disabled=!state.d3||!map?.setScene;$('#map-photo-status').hidden=!state.photo||!state.d3||!state.buildings||!map?.setScene;if(!$('#map-photo-status').textContent)$('#map-photo-status').textContent='Ortofoto · parets esquemàtiques';$('#map-wheel-hint').textContent=state.d3?'Roda: inclina · + / −: zoom':'Roda: zoom';$('#map-pitch').disabled=!state.d3;$('#rotate-left').disabled=!state.d3;$('#rotate-right').disabled=!state.d3;$('#map-pitch').value=Math.round(state.camera?.pitch??CAM[state.topic]?.pitch??58)}
 function initMap(){
   if(map)return;
-  const options={...cameraForTopic(),d3:state.d3,onActor:id=>openActor(id),onSection:showSection,onInteraction:stopPresentation,onCamera:c=>{state.camera=c;if(state.view==='mapa')updateHash();sync3DControls()},onStatus:status=>{
+  const options={...cameraForTopic(),d3:state.d3,onActor:id=>openActor(id),onSection:showSection,onInteraction:stopPresentation,onPhotoStatus:status=>{const el=$('#map-photo-status');el.hidden=!state.photo||!state.d3||!state.buildings;el.textContent=status.message||status.failed?'Alguns terrats sense imatge':status.loaded?'Terrats amb imatge · parets esquemàtiques':status.total?'Carregant les imatges dels terrats…':'Ortofoto · parets esquemàtiques';},onCamera:c=>{state.camera=c;if(state.view==='mapa')updateHash();sync3DControls();syncFacadeLink()},onStatus:status=>{
     const el=$('#map-status');
-    if(status.failed||status.timeout&&status.loaded<status.total){el.hidden=false;el.innerHTML='No s’ha carregat tot el fons de carrers. Comprova la connexió. <button class="text-button" data-action="retry-map">Reintenta</button>';}
-    else if(status.arcsFallback){el.hidden=false;el.textContent='Edificis i columnes 3D actius. Els vincles es mostren al terra perquè no s’ha carregat la capa d’arcs.';}
+    if(status.failed||status.timeout&&status.loaded<status.total){el.hidden=false;el.innerHTML='No s’ha carregat tot el mapa. Comprova la connexió. <button class="text-button" data-action="retry-map">Reintenta</button>';}
+    else if(status.arcsFallback&&state.d3){el.hidden=false;el.textContent='Columnes 3D actives. Els vincles es mostren al terra perquè no s’ha carregat la capa d’arcs.';}
     else if(status.loaded===status.total){el.hidden=true}else{el.hidden=false;el.textContent='Carregant el mapa de carrers…'}
   }};
   try{if(!window.maplibregl||!window.SaltVectorMap)throw Error('Motor 3D no disponible');map=new SaltVectorMap($('#map'),options);}
   catch(e){state.d3=false;map=new SaltRasterMap($('#map'),options);$('#toggle-3d').disabled=true;$('#toggle-3d').title='Aquest navegador utilitza el mapa 2D';toast('El navegador no ha pogut iniciar el mapa 3D. S’ha activat el mapa 2D.');}
   mapReady=true;map.setOverlay(drawMapOverlay);sync3DControls();
 }
-function mapScene(){const {aa,rel}=mapContext();return {actors:aa,relations:rel,allActors:A,allRelations:R,selected:state.selected,colors:col,layer:state.layer,d3:state.d3,terme:D.terme,seccions:D.seccions,istColor,rings:{type:'FeatureCollection',features:['S01','S02'].flatMap(id=>[500,1000].map(r=>({type:'Feature',properties:{r},geometry:{type:'LineString',coordinates:circle(byId[id].lon,byId[id].lat,r)}})))}}}
+function mapScene(){const {aa,rel}=mapContext();return {actors:aa,relations:rel,allActors:A,allRelations:R,selected:state.selected,colors:col,layer:state.layer,d3:state.d3,photo:state.photo,buildings:state.buildings,terme:D.terme,seccions:D.seccions,istColor,rings:{type:'FeatureCollection',features:['S01','S02'].flatMap(id=>[500,1000].map(r=>({type:'Feature',properties:{r},geometry:{type:'LineString',coordinates:circle(byId[id].lon,byId[id].lat,r)}})))}}}
 function stopPresentation(){if(presentationTimer!==null){clearInterval(presentationTimer);presentationTimer=null;}$('#presentation').setAttribute('aria-pressed','false');$('#presentation').innerHTML='▶ <span>Presentació</span>';}
 function startPresentation(){if(presentationTimer!==null){stopPresentation();return;}const topics=['actors','salut','tercer','educatiu','diversitat','ist','distancia'];if(!topics.includes(state.topic))setPreset('actors');$('#presentation').setAttribute('aria-pressed','true');$('#presentation').innerHTML='Ⅱ <span>Atura</span>';presentationTimer=setInterval(()=>{let i=topics.indexOf(state.topic);setPreset(topics[(i+1)%topics.length]);},7000);}
 function pathGeometry(geometry,m){
@@ -953,14 +1851,15 @@ function drawMapOverlay(m){
   }).join('');
   return html;
 }
+function syncFacadeLink(){const a=byId[state.selected],point=a?.lat!=null?[a.lon,a.lat]:state.camera?.center||CAM[state.topic]?.center||CAM.actors.center;$('#map-facades').href='https://visors.icgc.cat/catalunya-digital/carrers-3d/#/panorama/'+point[1].toFixed(6)+','+point[0].toFixed(6)}
 function renderMap(){
   const aa=filterActors(),geo=aa.filter(a=>a.lat!==null),a=byId[state.selected],extra=mapContext().aa.filter(a=>a.lat!==null&&!aa.some(x=>x.id===a.id)).length;
   $('#map-heading').textContent=state.layer==='ist'?'Context socioeconòmic':state.layer==='distance'?'Proximitat als CAP':a?a.nom:(presets[state.topic]?.title||'Els recursos de Salt');
   $('#map-count').textContent=a?`${a.lat===null?'Sense punt propi · ':''}${R.filter(r=>allowedRelation(r)&&(r.origen===a.id||r.desti===a.id)).length} vincles visibles · selecciona un recurs relacionat`:`${geo.length} fitxes amb ubicació${extra?' · '+extra+' recursos de context':''} · ${aa.length-geo.length} programes i recursos sense punt`;
-  $('#map-selection').hidden=!a;
+  $('#map-selection').hidden=!a;syncFacadeLink();
   if(map){if(map.setScene)map.setScene(mapScene());map.schedule()}sync3DControls();renderLegend();
 }
-function renderLegend(){let text;if(state.layer==='ist'){text=[['#b54447','<45'],['#dc8265','45–60'],['#efb792','60–75'],['#bad5de','75–90'],['#579eae','≥90']].map(([c,l])=>`<div class="legend-row"><span class="sphere-dot" style="--color:${c}"></span>${l}</div>`).join('')+'<p class="legend-note">IST 2023 · Catalunya = 100. Context de secció, no atribut de persones.</p>'}else if(state.layer==='distance'){text='<p class="legend-note">Verd: &lt;500 m · Ocre: 500–1.000 m · Vermell: ≥1.000 m.<br>Anells en línia recta; no són zones assignades als CAP.</p>'}else{text=Object.keys(col).filter(s=>state.spheres.has(s)||mapContext().rel.length>0).map(s=>`<div class="legend-row"><span class="sphere-dot" style="--color:${col[s]}"></span>${esc(short[s])}</div>`).join('')+'<p class="legend-note">En 2D, un número agrupa fitxes al mateix punt. Clica’l per obrir-les.<br>Les línies i arcs indiquen vincles, no itineraris.</p>'}if(state.d3)text+='<p class="legend-note map-3d-note"><b>3D · columnes de color</b><br>Altura: 10 + 6 × vincles funcionals documentats amb font pública (metres simbòlics). No mesura influència. Els CAP vermells són fites, fora d’aquesta escala.<br>Columnes transparents: fitxes pendents. Punts coincidents separats uns metres per poder-los clicar.<br>Arcs verds: font pública; taronja: interna; blau discontinu: hipòtesi; vermell: conflicte. Pertinença i vincles històrics, al terra.<br>Edificis OSM: alçades de la cartografia, o 5 m aproximats si no hi ha dada.</p>';$('#legend-content').innerHTML=text}
+function renderLegend(){let text;if(state.layer==='ist'){text=[['#b54447','<45'],['#dc8265','45–60'],['#efb792','60–75'],['#bad5de','75–90'],['#579eae','≥90']].map(([c,l])=>`<div class="legend-row"><span class="sphere-dot" style="--color:${c}"></span>${l}</div>`).join('')+'<p class="legend-note">IST 2023 · Catalunya = 100. Context de secció, no atribut de persones.</p>'}else if(state.layer==='distance'){text='<p class="legend-note">Verd: &lt;500 m · Ocre: 500–1.000 m · Vermell: ≥1.000 m.<br>Anells en línia recta; no són zones assignades als CAP.</p>'}else{text=Object.keys(col).filter(s=>state.spheres.has(s)||mapContext().rel.length>0).map(s=>`<div class="legend-row"><span class="sphere-dot" style="--color:${col[s]}"></span>${esc(short[s])}</div>`).join('')+'<p class="legend-note">En 2D, un número agrupa fitxes al mateix punt. Clica’l per obrir-les.<br>Les línies i arcs indiquen vincles, no itineraris.</p>'}if(state.d3)text+='<p class="legend-note map-3d-note"><b>3D · columnes de color</b><br>Altura: 10 + 6 × vincles funcionals documentats amb font pública (metres simbòlics). No mesura influència. Els CAP vermells són fites, fora d’aquesta escala.<br>Columnes transparents: fitxes pendents. Punts coincidents separats uns metres per poder-los clicar.<br>Arcs verds: font pública; taronja: interna; blau discontinu: hipòtesi; vermell: conflicte. Pertinença i vincles històrics, al terra.<br>Edificis OSM: alçades de la cartografia, o 5 m aproximats si no hi ha dada. Amb imatge aèria, els terrats es projecten sobre aquests volums; les parets són esquemàtiques.</p>';if(state.photo&&map?.setScene)text+='<p class="legend-note map-3d-note"><b>Imatge aèria · ICGC</b><br>Ortofoto de Catalunya, CC BY 4.0. No és una reconstrucció fotogràfica de les façanes. <a href="https://www.icgc.cat/es/El-ICGC/Informacion-publica/Transparencia/Reutilizacion-de-la-informacion" target="_blank" rel="noopener">Font i llicència</a>.</p>';$('#legend-content').innerHTML=text}
 function istColor(v){return v==null?'#ccc':v<45?'#b54447':v<60?'#dc8265':v<75?'#efb792':v<90?'#bad5de':'#579eae'}
 function showSection(p){let f=D.seccions.features.find(f=>f.properties.CUSEC===p.CUSEC);let x=f?f.properties:p;$('#drawer').hidden=false;$('#drawer').innerHTML=`<div class="drawer-head" style="--color:${istColor(x.ist_2023)}"><button class="icon-button" data-action="close" aria-label="Tanca la fitxa">×</button><span class="eyebrow">CONTEXT TERRITORIAL</span><h2>Secció ${esc(x.codi)}</h2><span class="badge">IST 2023</span></div><div class="drawer-body"><h2>${esc(x.ist_2023??'Sense dada')}</h2><p>Catalunya = 100. Un índex més baix indica més desavantatge socioeconòmic relatiu.</p><div class="notice">La dada descriu la secció censal. No permet atribuir vulnerabilitat a una persona, entitat o comunitat concreta.</div><p class="small-note">Font: Idescat; límits INE 2023. Dada conservada de la cartografia adjunta, sense una nova comprovació de la sèrie estadística.</p><button data-view="pla" class="btn primary">Porta-ho a la planificació</button></div>`;resize()}
 
@@ -1144,6 +2043,23 @@ ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+ISC License
+
+Copyright (c) 2016, Mapbox
+
+Permission to use, copy, modify, and/or distribute this software for any purpose
+with or without fee is hereby granted, provided that the above copyright notice
+and this permission notice appear in all copies.
+
+THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH
+REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND
+FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT,
+INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS
+OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
+TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF
+THIS SOFTWARE.
+
+
 -->
 </body></html>`;download('pla_comunitari_salt.html',html,'text/html;charset=utf-8')}
 
@@ -1154,14 +2070,29 @@ function pendingRows(){return A.filter(a=>a.necessita_validacio).map(a=>({tipus:
 function csv(rows){let fields=[...new Set(rows.flatMap(Object.keys))];const cell=v=>{if(v==null)v='';if(typeof v==='object')v=JSON.stringify(v);v=String(v);if(/^[=+@\t\r]/.test(v)||/^-(?!\d)/.test(v))v="'"+v;return '"'+v.replace(/"/g,'""')+'"'};return '\uFEFF'+[fields.map(cell).join(','),...rows.map(r=>fields.map(k=>cell(r[k])).join(','))].join('\r\n')}
 function download(name,content,type){let blob=content instanceof Blob?content:new Blob([content],{type});let u=URL.createObjectURL(blob),a=document.createElement('a');a.href=u;a.download=name;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),10000)}
 function exportCsv(name,rows){download(name,csv(rows),'text/csv;charset=utf-8');toast('CSV preparat')}
-async function exportImage(mode){try{if(mode==='network'){if(!cy)return;const reader=new FileReader();reader.onload=()=>composeImage(reader.result,'Xarxa de relacions',`${networkData().aa.length} fitxes · ${networkData().rr.length} relacions · consulta tipus i font al visor`);reader.readAsDataURL(cy.png({output:'blob',bg:'#f4f7f9',scale:2,full:false}))}else if(mapReady){const canvas=await map.exportCanvas();composeImage(canvas.toDataURL('image/png'),'Mapa comunitari','© OpenStreetMap · OpenFreeMap · OpenMapTiles · Salt 1 i Salt 2 · vincles, no itineraris · INE/IST 2023')}}catch(e){toast(e.message||'No s’ha pogut exportar la imatge.')}}
-function composeImage(src,title,note){let im=new Image();im.onload=()=>{let c=document.createElement('canvas');let w=Math.max(im.width,1100),legendH=160;c.width=w;c.height=Math.round(im.height*w/im.width)+legendH;let ctx=c.getContext('2d');ctx.fillStyle='#fff';ctx.fillRect(0,0,c.width,c.height);ctx.drawImage(im,0,0,w,c.height-legendH);ctx.fillStyle='#183547';ctx.font='bold 22px system-ui';ctx.fillText('SALT · '+title,24,c.height-128);ctx.font='14px system-ui';ctx.fillText(note,24,c.height-100);ctx.fillText('Revisió selectiva 08/10/2026 · fonts i precisió de cada recurs al visor',24,c.height-75);let x=24,y=c.height-45;for(const s of Object.keys(col)){const label=short[s],measure=ctx.measureText(label).width+28;if(x+measure>w-24){x=24;y+=23}ctx.fillStyle=col[s];ctx.fillRect(x,y-10,10,10);ctx.fillStyle='#244253';ctx.fillText(label,x+16,y);x+=measure}c.toBlob(b=>{if(b)download('sociograma_salt_'+(state.view==='xarxa'?'xarxa':'mapa')+'.png',b,'image/png')},'image/png')};im.onerror=()=>toast('No s’ha pogut preparar la imatge.');im.src=src}
+async function exportImage(mode){try{if(mode==='network'){if(!cy)return;const reader=new FileReader();reader.onload=()=>composeImage(reader.result,'Xarxa de relacions',`${networkData().aa.length} fitxes · ${networkData().rr.length} relacions · consulta tipus i font al visor`);reader.readAsDataURL(cy.png({output:'blob',bg:'#f4f7f9',scale:2,full:false}))}else if(mapReady){const canvas=await map.exportCanvas();composeImage(canvas.toDataURL('image/png'),'Mapa comunitari','© OpenStreetMap contributors · OpenFreeMap · OpenMapTiles · INE / IST 2023'+(state.photo&&map.setScene?'\nOrtofoto ©ICGC · CC BY 4.0 · '+(state.d3&&state.buildings?'Teulades projectades sobre volums OSM':'Imatge georeferenciada'):'')+' · vincles, no itineraris')}}catch(e){toast(e.message||'No s’ha pogut exportar la imatge.')}}
+function composeImage(src,title,note){
+  let im=new Image();im.onload=()=>{
+    const lines=note.split('\n'),c=document.createElement('canvas'),w=Math.max(im.width,1100),legendH=160+(lines.length-1)*22;
+    c.width=w;c.height=Math.round(im.height*w/im.width)+legendH;
+    const ctx=c.getContext('2d'),top=c.height-legendH;
+    ctx.fillStyle='#fff';ctx.fillRect(0,0,c.width,c.height);ctx.drawImage(im,0,0,w,top);
+    ctx.fillStyle='#183547';ctx.font='bold 22px system-ui';ctx.fillText('SALT · '+title,24,top+32);
+    ctx.font='14px system-ui';lines.forEach((line,i)=>ctx.fillText(line,24,top+60+i*22));
+    ctx.fillText('Revisió selectiva 08/10/2026 · fonts i precisió de cada recurs al visor',24,top+85+(lines.length-1)*22);
+    let x=24,y=c.height-45;
+    for(const s of Object.keys(col)){const label=short[s],measure=ctx.measureText(label).width+28;if(x+measure>w-24){x=24;y+=23}ctx.fillStyle=col[s];ctx.fillRect(x,y-10,10,10);ctx.fillStyle='#244253';ctx.fillText(label,x+16,y);x+=measure}
+    c.toBlob(b=>{if(b)download('sociograma_salt_'+(state.view==='xarxa'?'xarxa':'mapa')+'.png',b,'image/png')},'image/png');
+  };im.onerror=()=>toast('No s’ha pogut preparar la imatge.');im.src=src;
+}
 
 document.addEventListener('click',e=>{let b=e.target.closest('[data-preset],[data-map-actor],[data-view],[data-open],[data-focus],[data-add],[data-remove],[data-template],[data-quick],[data-action],[data-group],[data-section]');if(!b)return;if(b.dataset.preset){stopPresentation();setPreset(b.dataset.preset);return}if(b.dataset.mapActor){showView('mapa');openActor(b.dataset.mapActor);return}if(b.dataset.view){showView(b.dataset.view);return}if(b.dataset.open){openActor(b.dataset.open);return}if(b.dataset.focus){focusNetwork(b.dataset.focus);return}if(b.dataset.add){addActor(b.dataset.add);return}if(b.dataset.remove){plan.actors=plan.actors.filter(id=>id!==b.dataset.remove);savePlan();renderPlan();return}if(b.dataset.template){plan.template=b.dataset.template;savePlan();renderPlan();return}if(b.dataset.group){showGroup(b.dataset.group.split(','));return}if(b.dataset.section&&state.layer==='ist'){showSection({CUSEC:b.dataset.section});return}if(b.dataset.quick){state.selected=null;$('#drawer').hidden=true;let k=b.dataset.quick;state.focus=null;state.networkMode='all';state.spheres=new Set(k==='tots'?Object.keys(col):k==='educacio'?['Educació']:k==='salut'?['Salut']:['Tercer sector','Comunitat, cultura, esport i gent gran','Diversitat cultural, religiosa i de gènere','Població no organitzada','Serveis municipals i socials']);$$('[data-quick]').forEach(x=>x.classList.toggle('active',x===b));refresh();return}const a=b.dataset.action;if(a==='retry-map'&&map)map.retry();if(a==='community-network')focusNetwork('S04');if(a==='all-links'){state.internal=state.proposals=state.structural=true;syncControls();renderNetwork();updateHash()}if(a==='clear-selection')closeDrawer();if(a==='selected-network')focusNetwork(state.selected);if(a==='close')closeDrawer();if(a==='reset')resetFilters();if(a==='add-template'){for(const id of currentTemplate().actors)if(!plan.actors.includes(id))plan.actors.push(id);savePlan();renderPlan();toast('Actors afegits; confirma amb ells el paper i la disponibilitat')}if(a==='export-plan')exportPlan();if(a==='export-json')download('pla_salt.json',JSON.stringify({format:'salt-plan-v2',versio_dades:D.meta.versio,exportat:new Date().toISOString(),pla:plan},null,2),'application/json');if(a==='import-plan')$('#import-plan-file').click();if(a==='export-registry')exportCsv('registre_entitats_salt.csv',D.registre);if(a==='export-pending')exportCsv('pendents_validacio_salt.csv',pendingRows());if(a==='all-actors')exportCsv('actors_salt.csv',A);if(a==='all-relations')exportCsv('relacions_salt.csv',R);if(a==='all-sources')exportCsv('fonts_salt.csv',D.fonts);if(a==='all-changes')exportCsv('canvis_salt.csv',D.canvis)});
 $('#search').addEventListener('input',e=>{if(!['mapa','xarxa','directori'].includes(state.view))showView('directori');$('#result-details').open=true;state.selected=null;$('#drawer').hidden=true;state.q=e.target.value;state.focus=null;state.networkMode='all';refresh()});$('#sphere-filters').addEventListener('change',e=>{let s=e.target.dataset.sphere;if(!s)return;state.selected=null;$('#drawer').hidden=true;e.target.checked?state.spheres.add(s):state.spheres.delete(s);state.focus=null;state.networkMode='all';$$('[data-quick]').forEach(x=>x.classList.remove('active'));refresh()});$('#territory').onchange=e=>{state.selected=null;$('#drawer').hidden=true;state.territory=e.target.value;state.focus=null;state.networkMode='all';refresh()};$('#review-filter').onchange=e=>{state.selected=null;$('#drawer').hidden=true;state.review=e.target.value;refresh()};$('#reset').onclick=resetFilters;$('#export-csv').onclick=()=>exportCsv('seleccio_salt.csv',filterActors());$('#map-layer').onchange=e=>{state.layer=e.target.value;state.topic=state.layer==='ist'?'ist':state.layer==='distance'?'distancia':'actors';state.camera=null;renderMap();syncNavigation();applyMapCamera();updateHash()};$('#fit-map').onclick=()=>{stopPresentation();closeDrawer();state.camera=null;applyMapCamera()};$('#map-export').onclick=()=>exportImage('map');$('#network-export').onclick=()=>exportImage('network');$('#network-reset').onclick=()=>{state.focus=null;state.networkMode='all';renderNetwork();renderSidebar();updateHash()};[['#show-internal','internal'],['#show-proposals','proposals'],['#show-structural','structural']].forEach(([s,k])=>$(s).onchange=e=>{state[k]=e.target.checked;renderNetwork();renderSidebar();updateHash()});$('#toggle-sidebar').onclick=()=>{let open;if(matchMedia('(max-width:850px)').matches){open=$('#sidebar').classList.toggle('open')}else{open=!document.body.classList.toggle('sidebar-closed')}$('#toggle-sidebar').setAttribute('aria-expanded',String(open));resize()};$('#scope-button').onclick=()=>$('#scope-dialog').showModal();$$('.close-dialog').forEach(b=>b.onclick=()=>b.closest('dialog').close());$('#share').onclick=()=>{updateHash();$('#link-value').value=location.href;$('#export-dialog').showModal()};$('#copy-link').onclick=async()=>{try{await navigator.clipboard.writeText($('#link-value').value);toast('Enllaç copiat')}catch(_){$('#link-value').select();toast('Selecciona i copia l’enllaç')}};document.addEventListener('keydown',e=>{if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==='k'){e.preventDefault();openSearch()}if(e.key==='Escape')closeDrawer();if(e.key==='Enter'&&e.target.matches('g[role=button]'))e.target.dispatchEvent(new MouseEvent('click',{bubbles:true}))});window.addEventListener('resize',resize);window.addEventListener('hashchange',()=>{readHash();syncControls();refresh();showView(state.view);if(state.selected)openActor(state.selected,false);else $('#drawer').hidden=true;if(state.view==='mapa')applyMapCamera()});
 $('#toggle-3d').onclick=()=>{stopPresentation();state.d3=!state.d3;state.camera=null;sync3DControls();if(state.view==='mapa'){renderMap();applyMapCamera()}updateHash()};
 $('#map-arcs').onchange=e=>{stopPresentation();state.arcs=e.target.checked;renderMap();updateHash()};
 for(const [id,step] of [['#rotate-left',-25],['#rotate-right',25]])$(id).onclick=()=>{stopPresentation();if(map?.camera){let c=map.camera();c.bearing+=step;map.easeTo({...c,duration:700})}};
+$('#map-photo').onchange=e=>{stopPresentation();state.photo=e.target.checked;renderMap();updateHash()};
+$('#map-buildings').onchange=e=>{stopPresentation();state.buildings=e.target.checked;renderMap();updateHash()};
 $('#map-pitch').oninput=e=>{stopPresentation();if(map?.camera)map.easeTo({...map.camera(),pitch:Number(e.target.value),duration:120})};
 $('#presentation').onclick=startPresentation;
 document.addEventListener('pointerdown',e=>{if(presentationTimer!==null&&!e.target.closest('#presentation'))stopPresentation()});
@@ -1313,6 +2244,23 @@ LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
 ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+ISC License
+
+Copyright (c) 2016, Mapbox
+
+Permission to use, copy, modify, and/or distribute this software for any purpose
+with or without fee is hereby granted, provided that the above copyright notice
+and this permission notice appear in all copies.
+
+THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH
+REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND
+FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT,
+INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS
+OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
+TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF
+THIS SOFTWARE.
+
 
 -->
 </body>
