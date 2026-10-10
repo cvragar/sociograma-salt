@@ -67,7 +67,7 @@ html,body{height:100%;overflow:hidden}.topbar{height:56px;padding:0 16px;gap:14p
 @media(max-width:420px){.map-legend[open]{max-width:200px}.map-bottom{bottom:42px;max-width:100px;flex-direction:column;gap:3px}.brand{font-size:11px}.prose-view h2{font-size:22px}}
 @media print{html,body{overflow:visible;height:auto}.prose-view{background:white}.question-nav,.aux-nav,.cover-actions{display:none}}
 /* Perspective controls and vector map. */
-.vector-canvas,.vector-overlay{position:absolute;inset:0;width:100%;height:100%}.vector-overlay{z-index:2;pointer-events:none}.vector-overlay [data-open],.vector-overlay [data-group],.vector-overlay [data-section]{pointer-events:auto}.vector-map .maplibregl-ctrl-top-right{top:197px;right:4px}.vector-map .maplibregl-ctrl-bottom-left{bottom:0}.maplibregl-ctrl-attrib{font-size:10px!important}.map-tools{max-width:260px}.map-tools .map-arcs-control{font-size:11px;display:flex;gap:6px;align-items:center}.map-arcs-control input{width:14px;height:14px;margin:0}.camera-tools{display:flex;width:100%;align-items:center;gap:6px}.camera-tools label{min-width:0;font-size:10px}.camera-tools input{display:block;width:115px;height:17px;accent-color:#386d94}.camera-tools button{font-size:19px;line-height:1;padding:4px 8px}.map-tooltip{position:absolute;z-index:8;max-width:260px;white-space:pre-line;pointer-events:none;background:#193348ed;color:white;padding:10px 12px;border-radius:5px;box-shadow:0 4px 16px #173a5230;font-size:12px;line-height:1.5}.topbar #toggle-3d[aria-pressed=true]{background:#93c5ec;color:#193d5e;border-color:#aacded}.topbar #presentation[aria-pressed=true]{background:#fff3c4;color:#654a11}.map-3d-note{border-top:1px solid #e0e5eb;padding-top:8px;margin-top:9px}.map-status{bottom:140px}.vector-map[data-mode=3d] .maplibregl-canvas{cursor:grab}
+.vector-canvas,.vector-overlay{position:absolute;inset:0;width:100%;height:100%}.vector-overlay{z-index:2;pointer-events:none}.vector-overlay [data-open],.vector-overlay [data-group],.vector-overlay [data-section]{pointer-events:auto}.vector-map .maplibregl-ctrl-top-right{top:4px;right:275px}.vector-map .maplibregl-ctrl-bottom-left{bottom:0}.maplibregl-ctrl-attrib{font-size:10px!important}.map-tools{max-width:260px}.map-tools .map-arcs-control{font-size:11px;display:flex;gap:6px;align-items:center}.map-arcs-control input{width:14px;height:14px;margin:0}.camera-tools{display:flex;width:100%;align-items:center;gap:6px}.camera-tools label{min-width:0;font-size:10px}.camera-tools input{display:block;width:115px;height:17px;accent-color:#386d94}.camera-tools button{font-size:19px;line-height:1;padding:4px 8px}.map-tooltip{position:absolute;z-index:8;max-width:260px;white-space:pre-line;pointer-events:none;background:#193348ed;color:white;padding:10px 12px;border-radius:5px;box-shadow:0 4px 16px #173a5230;font-size:12px;line-height:1.5}.topbar #toggle-3d[aria-pressed=true]{background:#93c5ec;color:#193d5e;border-color:#aacded}.topbar #presentation[aria-pressed=true]{background:#fff3c4;color:#654a11}.map-legend{max-height:calc(100% - 255px);overflow:auto}.map-3d-note{border-top:1px solid #e0e5eb;padding-top:8px;margin-top:9px}.map-status{bottom:140px}.vector-map[data-mode=3d] .maplibregl-canvas{cursor:grab}
 @container(max-width:740px){.vector-map .maplibregl-ctrl-top-right{top:4px;right:4px}.map-tools{top:142px;left:14px;max-width:230px}.map-title{max-width:calc(100% - 74px)}.camera-tools input{width:90px}}
 @media(max-width:850px){#presentation span{display:none}.map-tools{top:146px;left:12px;max-width:215px}.vector-map .maplibregl-ctrl-top-right{top:2px;right:2px}.map-legend[open]{max-height:31%}.map-tools label{font-size:10px}.camera-tools input{width:90px}.top-actions{gap:3px}.top-actions .btn{padding:6px 7px}.map-status{bottom:140px}}
 
@@ -658,7 +658,7 @@ return maplibregl$1;
         customAttribution:'<a href="https://openfreemap.org/" target="_blank" rel="noopener">OpenFreeMap</a> · <a href="https://openmaptiles.org/" target="_blank" rel="noopener">OpenMapTiles</a> · Límits INE · IST Idescat 2023'}));
       this.gl.addControl(new maplibregl.NavigationControl({visualizePitch:true}),'top-right');
       this.gl.addControl(new maplibregl.ScaleControl({unit:'metric'}),'bottom-left');
-      this.gl.on('load',()=>this.initLayers());
+      this.gl.on('style.load',()=>this.initLayers());
       this.gl.on('move',()=>this.schedule());
       this.gl.on('moveend',()=>{this.syncCamera();if(options.onCamera)options.onCamera(this.camera());});
       this.gl.on('idle',()=>this.reportStatus());
@@ -697,6 +697,7 @@ return maplibregl$1;
       m.addLayer({id:'salt-actors-pending',type:'fill-extrusion',source:'salt-columns',filter:['==',['get','hip'],1],paint:paint(.45)});
       m.addLayer({id:'salt-pending-outline',type:'line',source:'salt-columns',filter:['==',['get','hip'],1],paint:{'line-color':'#2b6cd6','line-width':1.4,'line-dasharray':[2,1.5]}});
       m.addLayer({id:'salt-cap-landmarks',type:'fill-extrusion',source:'salt-caps',paint:{...paint(.95),'fill-extrusion-color':'#c0392b'}});
+      m.addLayer({id:'salt-cap-labels',type:'symbol',source:'salt-caps',layout:{'text-field':['case',['==',['get','id'],'S01'],'CAP Salt 1','CAP Salt 2'],'text-size':13,'text-allow-overlap':true},paint:{'text-color':'#a0282c','text-halo-color':'#fff','text-halo-width':2}});
       m.setLight({anchor:'viewport',color:'#fff',intensity:.4,position:[1.3,210,35]});
       if(window.deck?.MapboxOverlay){try{this.deckOverlay=new deck.MapboxOverlay({interleaved:true,layers:[]});m.addControl(this.deckOverlay);}catch(e){this.deckError=e.message;}}
       this.schedule(); this.reportStatus();
@@ -737,6 +738,7 @@ return maplibregl$1;
       this.visible('salt-ist-fill',this.is3D&&s.layer==='ist');this.visible('salt-ist-outline',this.is3D&&s.layer==='ist');
       this.visible('salt-ring-lines',this.is3D&&s.layer==='distance');
       const hasDeck=!!this.deckOverlay;
+      this.visible('salt-cap-labels',this.is3D&&!hasDeck);
       this.visible('salt-fallback-lines',this.is3D&&!hasDeck);
       if(!hasDeck)m.getSource('salt-fallback-arcs').setData({type:'FeatureCollection',features:b.paths.map(p=>({type:'Feature',properties:{c:`rgb(${p.color.slice(0,3).join(',')})`},geometry:{type:'LineString',coordinates:p.path.map(x=>x.slice(0,2))}}))});
       if(hasDeck){
@@ -744,8 +746,8 @@ return maplibregl$1;
           new deck.PathLayer({id:'salt-elevated-relations',data:b.paths,getPath:d=>d.path,getColor:d=>d.color,getWidth:d=>d.width,
             widthUnits:'pixels',widthMinPixels:1.2,capRounded:true,jointRounded:true,billboard:true,pickable:true,
             onHover:info=>this.pathHover(info),parameters:{depthTest:true}}),
-          new deck.TextLayer({id:'salt-elevated-labels',data:b.labels,getPosition:d=>d.position,getText:d=>d.text,getColor:d=>d.color,
-            getSize:13,fontWeight:650,fontFamily:'system-ui, sans-serif',billboard:true,pickable:false,
+          new deck.TextLayer({id:'salt-elevated-labels',data:b.labels.map(l=>({...l,text:l.id==='S01'?'CAP Salt 1':l.id==='S02'?'CAP Salt 2':l.text})),getPosition:d=>d.position,getText:d=>d.text,getColor:d=>d.color,
+            getSize:13,fontWeight:650,fontFamily:'system-ui, sans-serif',characterSet:'auto',billboard:true,pickable:false,
             outlineWidth:3,outlineColor:[255,255,255,245],fontSettings:{sdf:true},parameters:{depthTest:false}})
         ]:[];
         this.deckOverlay.setProps({layers});
@@ -776,7 +778,12 @@ return maplibregl$1;
       const find=id=>this.scene.allActors.find(a=>a.id===id)?.nom||id;
       this.showTooltip(`${find(r.origen)} — ${find(r.desti)}\n${r.tipus_relacio} · ${r.suport==='proposta'?'hipòtesi':r.suport==='public'?'font pública':r.suport==='mixt'?'font pública i interna':'font interna'}`,info.x,info.y);}
     reportStatus(){this.options.onStatus?.({loaded:this.ready?1:0,total:1,failed:this.lastError?1:0,message:this.lastError,arcsFallback:this.ready&&!this.deckOverlay});}
-    retry(){if(!this.ready)this.gl.setStyle('https://tiles.openfreemap.org/styles/positron');else{this.lastError=null;this.gl.triggerRepaint();this.reportStatus();}}
+    retry(){
+      if(this.deckOverlay){this.gl.removeControl(this.deckOverlay);this.deckOverlay=null;}
+      this.ready=false;this.lastError=null;this.dirty=true;this.reportStatus();
+      this.gl.setStyle('https://tiles.openfreemap.org/styles/positron',{diff:false});
+      clearTimeout(this.loadingTimer);this.loadingTimer=setTimeout(()=>{if(!this.ready){this.lastError='El fons vectorial encara no s’ha carregat.';this.reportStatus();}},15000);
+    }
     async exportCanvas(){
       if(!this.ready||!this.gl.areTilesLoaded())throw Error('Espera que es carregui el mapa abans d’exportar.');
       const source=this.gl.getCanvas(),c=document.createElement('canvas');c.width=source.width;c.height=source.height;
@@ -893,7 +900,7 @@ function resetFilters(){state.topic=state.view==='mapa'?'actors':topicForView(st
 // Real vector perspective, retaining the raster map as a compatibility fallback.
 function circle(lon,lat,r){let coords=[];for(let i=0;i<=72;i++){let t=i/72*2*Math.PI;coords.push([lon+r*Math.cos(t)/(111320*Math.cos(lat*Math.PI/180)),lat+r*Math.sin(t)/110540])}return coords}
 function mapContext(){
-  let aa=filterActors(); const ids=new Set(aa.map(a=>a.id)); const rel=state.selected?R.filter(r=>allowedRelation(r)&&(r.origen===state.selected||r.desti===state.selected)):(state.arcs||state.topic==='tercer')?R.filter(r=>allowedRelation(r)&&r.classe==='funcional'&&r.tipus_relacio!=='sense relació'&&(state.topic==='tercer'?(ids.has(r.origen)||ids.has(r.desti)):(ids.has(r.origen)&&ids.has(r.desti)))):[];
+  let aa=filterActors(); const ids=new Set(aa.map(a=>a.id)); const rel=state.selected?R.filter(r=>allowedRelation(r)&&(r.origen===state.selected||r.desti===state.selected)):(state.arcs||state.topic==='tercer')?R.filter(r=>allowedRelation(r)&&r.classe==='funcional'&&r.tipus_relacio!=='sense relació'&&(ids.has(r.origen)||ids.has(r.desti))):[];
   const near=new Set([state.selected,...rel.flatMap(r=>[r.origen,r.desti])].filter(Boolean));
   aa=[...new Map([...aa,...A.filter(a=>near.has(a.id)),byId.S01,byId.S02].map(a=>[a.id,a])).values()];
   return {aa,rel,near};
@@ -934,10 +941,7 @@ function drawMapOverlay(m){
   html+=D.terme.features.map(f=>`<path d="${pathGeometry(f.geometry,m)}" fill="none" stroke="#385b69" stroke-width="1.7" stroke-dasharray="6 5" pointer-events="none"/>`).join('');
   if(state.layer==='distance')html+=['S01','S02'].flatMap(id=>[500,1000].map(r=>`<path d="M${circle(byId[id].lon,byId[id].lat,r).map(p=>{let q=m.project(p);return q.x+','+q.y}).join('L')}Z" fill="none" stroke="#8c5361" stroke-width="1.5" stroke-dasharray="6 4" pointer-events="none"/>`)).join('');
   const {rel}=mapContext(), selected=byId[state.selected];
-  if(selected?.lat!==null&&selected){
-    const from=m.project([selected.lon,selected.lat]);
-    html+=rel.map(r=>{const a=byId[r.origen===selected.id?r.desti:r.origen];if(a.lat===null)return '';const to=m.project([a.lon,a.lat]);return `<path d="M${from.x},${from.y}L${to.x},${to.y}" fill="none" stroke="${edgeColor(r)}" stroke-width="2.5" stroke-dasharray="${edgeDash(r)==='dashed'?'7 5':edgeDash(r)==='dotted'?'2 5':''}" stroke-opacity=".8" pointer-events="none"/>`}).join('');
-  }
+  html+=rel.map(r=>{const a=byId[r.origen],b=byId[r.desti];if(a.lat===null||b.lat===null)return '';const from=m.project([a.lon,a.lat]),to=m.project([b.lon,b.lat]);return `<path d="M${from.x},${from.y}L${to.x},${to.y}" fill="none" stroke="${edgeColor(r)}" stroke-width="2.5" stroke-dasharray="${edgeDash(r)==='dashed'?'7 5':edgeDash(r)==='dotted'?'2 5':''}" stroke-opacity=".8" pointer-events="none"/>`}).join('');
   html+=features().sort((a,b)=>(Number(a.selected)*3+Number(a.actors.some(x=>x.id==='S01'||x.id==='S02'))*2)-(Number(b.selected)*3+Number(b.actors.some(x=>x.id==='S01'||x.id==='S02'))*2)).map(g=>{
     const pt=m.project(g.coordinate), cap=g.actors.find(a=>a.id==='S01'||a.id==='S02'), ids=g.actors.map(a=>a.id), label=cap?'✚ '+(cap.id==='S01'?'Salt 1':'Salt 2')+(ids.length>1?' · '+ids.length:''):'';
     if(pt.x < -150||pt.y < -60||pt.x > m.width+150||pt.y > m.height+60)return '';
@@ -950,13 +954,13 @@ function drawMapOverlay(m){
   return html;
 }
 function renderMap(){
-  const aa=filterActors(),geo=aa.filter(a=>a.lat!==null),a=byId[state.selected];
+  const aa=filterActors(),geo=aa.filter(a=>a.lat!==null),a=byId[state.selected],extra=mapContext().aa.filter(a=>a.lat!==null&&!aa.some(x=>x.id===a.id)).length;
   $('#map-heading').textContent=state.layer==='ist'?'Context socioeconòmic':state.layer==='distance'?'Proximitat als CAP':a?a.nom:(presets[state.topic]?.title||'Els recursos de Salt');
-  $('#map-count').textContent=a?`${a.lat===null?'Sense punt propi · ':''}${R.filter(r=>allowedRelation(r)&&(r.origen===a.id||r.desti===a.id)).length} vincles visibles · selecciona un recurs relacionat`:`${geo.length} fitxes amb ubicació · ${aa.length-geo.length} programes i recursos sense punt`;
+  $('#map-count').textContent=a?`${a.lat===null?'Sense punt propi · ':''}${R.filter(r=>allowedRelation(r)&&(r.origen===a.id||r.desti===a.id)).length} vincles visibles · selecciona un recurs relacionat`:`${geo.length} fitxes amb ubicació${extra?' · '+extra+' recursos de context':''} · ${aa.length-geo.length} programes i recursos sense punt`;
   $('#map-selection').hidden=!a;
   if(map){if(map.setScene)map.setScene(mapScene());map.schedule()}sync3DControls();renderLegend();
 }
-function renderLegend(){let text;if(state.layer==='ist'){text=[['#b54447','<45'],['#dc8265','45–60'],['#efb792','60–75'],['#bad5de','75–90'],['#579eae','≥90']].map(([c,l])=>`<div class="legend-row"><span class="sphere-dot" style="--color:${c}"></span>${l}</div>`).join('')+'<p class="legend-note">IST 2023 · Catalunya = 100. Context de secció, no atribut de persones.</p>'}else if(state.layer==='distance'){text='<p class="legend-note">Verd: &lt;500 m · Ocre: 500–1.000 m · Vermell: ≥1.000 m.<br>Anells en línia recta; no són zones assignades als CAP.</p>'}else{text=Object.keys(col).filter(s=>state.spheres.has(s)).map(s=>`<div class="legend-row"><span class="sphere-dot" style="--color:${col[s]}"></span>${esc(short[s])}</div>`).join('')+'<p class="legend-note">En 2D, un número agrupa fitxes al mateix punt. Clica’l per obrir-les.<br>Les línies del recurs seleccionat indiquen vincles, no itineraris.</p>'}if(state.d3)text+='<p class="legend-note map-3d-note"><b>3D · columnes de color</b><br>Altura: 10 + 6 × vincles funcionals documentats amb font pública (metres simbòlics). No mesura influència. Els CAP vermells són fites, fora d’aquesta escala.<br>Columnes transparents: fitxes pendents. Punts coincidents separats uns metres per poder-los clicar.<br>Arcs verds: font pública; taronja: interna; blau discontinu: hipòtesi; vermell: conflicte. Pertinença i vincles històrics, al terra.<br>Edificis OSM: alçades de la cartografia, o 5 m aproximats si no hi ha dada.</p>';$('#legend-content').innerHTML=text}
+function renderLegend(){let text;if(state.layer==='ist'){text=[['#b54447','<45'],['#dc8265','45–60'],['#efb792','60–75'],['#bad5de','75–90'],['#579eae','≥90']].map(([c,l])=>`<div class="legend-row"><span class="sphere-dot" style="--color:${c}"></span>${l}</div>`).join('')+'<p class="legend-note">IST 2023 · Catalunya = 100. Context de secció, no atribut de persones.</p>'}else if(state.layer==='distance'){text='<p class="legend-note">Verd: &lt;500 m · Ocre: 500–1.000 m · Vermell: ≥1.000 m.<br>Anells en línia recta; no són zones assignades als CAP.</p>'}else{text=Object.keys(col).filter(s=>state.spheres.has(s)||mapContext().rel.length>0).map(s=>`<div class="legend-row"><span class="sphere-dot" style="--color:${col[s]}"></span>${esc(short[s])}</div>`).join('')+'<p class="legend-note">En 2D, un número agrupa fitxes al mateix punt. Clica’l per obrir-les.<br>Les línies i arcs indiquen vincles, no itineraris.</p>'}if(state.d3)text+='<p class="legend-note map-3d-note"><b>3D · columnes de color</b><br>Altura: 10 + 6 × vincles funcionals documentats amb font pública (metres simbòlics). No mesura influència. Els CAP vermells són fites, fora d’aquesta escala.<br>Columnes transparents: fitxes pendents. Punts coincidents separats uns metres per poder-los clicar.<br>Arcs verds: font pública; taronja: interna; blau discontinu: hipòtesi; vermell: conflicte. Pertinença i vincles històrics, al terra.<br>Edificis OSM: alçades de la cartografia, o 5 m aproximats si no hi ha dada.</p>';$('#legend-content').innerHTML=text}
 function istColor(v){return v==null?'#ccc':v<45?'#b54447':v<60?'#dc8265':v<75?'#efb792':v<90?'#bad5de':'#579eae'}
 function showSection(p){let f=D.seccions.features.find(f=>f.properties.CUSEC===p.CUSEC);let x=f?f.properties:p;$('#drawer').hidden=false;$('#drawer').innerHTML=`<div class="drawer-head" style="--color:${istColor(x.ist_2023)}"><button class="icon-button" data-action="close" aria-label="Tanca la fitxa">×</button><span class="eyebrow">CONTEXT TERRITORIAL</span><h2>Secció ${esc(x.codi)}</h2><span class="badge">IST 2023</span></div><div class="drawer-body"><h2>${esc(x.ist_2023??'Sense dada')}</h2><p>Catalunya = 100. Un índex més baix indica més desavantatge socioeconòmic relatiu.</p><div class="notice">La dada descriu la secció censal. No permet atribuir vulnerabilitat a una persona, entitat o comunitat concreta.</div><p class="small-note">Font: Idescat; límits INE 2023. Dada conservada de la cartografia adjunta, sense una nova comprovació de la sèrie estadística.</p><button data-view="pla" class="btn primary">Porta-ho a la planificació</button></div>`;resize()}
 
