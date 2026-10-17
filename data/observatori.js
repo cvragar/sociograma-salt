@@ -271,7 +271,7 @@ window.OBSERVATORI = {
       "font": "Àrea de Territori, Ajuntament de Salt · Observatori de Salt",
       "url": "https://observatori.salt.cat/indicadors/territori/habitatge/habitatges-amb-persones-empadronades/",
       "definicio": "Habitatges amb o sense persones empadronades, segons la taula municipal.",
-      "nota": "Es reprodueixen els recomptes. No es reutilitzen els percentatges publicats: 91,1% + 9,5% no coincideixen amb el total del 101% mostrat a la font. Sense padró no acredita que un habitatge estigui buit."
+      "nota": "Es reprodueixen els recomptes. Els percentatges publicats no concorden amb aquests recomptes i la font mostra un total del 101%; per això no es reutilitzen. Sense padró no acredita que un habitatge estigui buit."
     },
     {
       "id": "habitatges_sense_padro",
@@ -283,7 +283,7 @@ window.OBSERVATORI = {
       "font": "Àrea de Territori, Ajuntament de Salt · Observatori de Salt",
       "url": "https://observatori.salt.cat/indicadors/territori/habitatge/habitatges-amb-persones-empadronades/",
       "definicio": "Habitatges amb o sense persones empadronades, segons la taula municipal.",
-      "nota": "Es reprodueixen els recomptes. No es reutilitzen els percentatges publicats: 91,1% + 9,5% no coincideixen amb el total del 101% mostrat a la font. Sense padró no acredita que un habitatge estigui buit."
+      "nota": "Es reprodueixen els recomptes. Els percentatges publicats no concorden amb aquests recomptes i la font mostra un total del 101%; per això no es reutilitzen. Sense padró no acredita que un habitatge estigui buit."
     },
     {
       "id": "habitatges_total",
@@ -295,7 +295,7 @@ window.OBSERVATORI = {
       "font": "Àrea de Territori, Ajuntament de Salt · Observatori de Salt",
       "url": "https://observatori.salt.cat/indicadors/territori/habitatge/habitatges-amb-persones-empadronades/",
       "definicio": "Habitatges amb o sense persones empadronades, segons la taula municipal.",
-      "nota": "Es reprodueixen els recomptes. No es reutilitzen els percentatges publicats: 91,1% + 9,5% no coincideixen amb el total del 101% mostrat a la font. Sense padró no acredita que un habitatge estigui buit."
+      "nota": "Es reprodueixen els recomptes. Els percentatges publicats no concorden amb aquests recomptes i la font mostra un total del 101%; per això no es reutilitzen. Sense padró no acredita que un habitatge estigui buit."
     }
   ],
   "oportunitats": [

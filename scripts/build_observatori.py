@@ -34,7 +34,7 @@ for i, b in enumerate(raw['neighborhoods2025']):
     ind.append(dict(id=f'barri_{i}', nom=b['label'], valor=b['population'], unitat='habitants', any=2025, grup='Població per barri', font=raw['primarySource'] + ' · Observatori de Salt', url=src['neighborhoods'], definicio='Població empadronada al barri; no és una zona de cobertura de CAP.', nota=f"{str(b['percent']).replace('.', ',')}% de la població municipal. " + b.get('note', '')))
 
 housing_url = 'https://observatori.salt.cat/indicadors/territori/habitatge/habitatges-amb-persones-empadronades/'
-housing_note = "Es reprodueixen els recomptes. No es reutilitzen els percentatges publicats: 91,1% + 9,5% no coincideixen amb el total del 101% mostrat a la font. Sense padró no acredita que un habitatge estigui buit."
+housing_note = "Es reprodueixen els recomptes. Els percentatges publicats no concorden amb aquests recomptes i la font mostra un total del 101%; per això no es reutilitzen. Sense padró no acredita que un habitatge estigui buit."
 for ident, nom, count in [('habitatges_padro', 'Habitatges amb persones empadronades', 10526), ('habitatges_sense_padro', 'Habitatges sense persones empadronades', 1098), ('habitatges_total', 'Total d’habitatges de la taula de padró', 11624)]:
     ind.append(dict(id=ident, nom=nom, valor=count, unitat='habitatges', any=2025, grup='Habitatge', font='Àrea de Territori, Ajuntament de Salt · Observatori de Salt', url=housing_url, definicio='Habitatges amb o sense persones empadronades, segons la taula municipal.', nota=housing_note))
 
