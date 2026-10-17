@@ -2,6 +2,8 @@
 (function(){
 'use strict';
 const D = window.DADES;
+const O = window.OBSERVATORI || {indicadors:[]};
+const OM = O.metadades || O.metadatos || O;
 const $ = s => document.querySelector(s);
 const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const safeUrl = u => /^https?:\/\//i.test(u||'') ? u : null;
@@ -32,6 +34,7 @@ const istCol = v => v == null ? null : IST_BR.find(b => v >= b[0] && v < b[1])[2
 
 const VISTES = [
  {id:'portada', q:'Què és aquest visor?', tipus:'panell'},
+ {id:'observatori', q:'Què ens diuen les dades oficials?', tipus:'panell'},
  {id:'actors', q:'On són els actors comunitaris?', tipus:'mapa', sel: a => true, col: a => ESF[a.esfera], filtreEsfera:true},
  {id:'salut', q:'Quins actors de salut hi ha?', tipus:'mapa', sel: isSalut, col: a => SALUT_COL[salutCat(a)]},
  {id:'tercer', q:'Qui fa xarxa al Tercer Sector?', tipus:'mapa', sel: a => a.esfera === 'Tercer sector', col: a => ESF[a.esfera], linies:true},
@@ -496,9 +499,10 @@ function pintaPortada(){
   $('#portada').innerHTML = `<h2>Sociograma comunitari del territori dels CAP Salt 1 i Salt 2</h2>
    <p class="subt">EAP Salt · ICS Girona · ABS 199 · octubre de 2026 · <span class="etq hipotesi">Document de treball per validar amb l'equip</span></p>
    <h3>Què és</h3><p>Un mapa d'actors i relacions del municipi de Salt per orientar la salut comunitària dels dos CAP. Recull ${A.length} actors (${nGeo} ubicats) i ${R.length} relacions, de les quals ${nHip} són hipòtesis pendents de validar. Queden fora els pobles de l'ABS (Aiguaviva, Bescanó amb Estanyol i Vilanna, Fornells de la Selva i Vilablareix).</p>
+   <div class="obs-portada"><span class="etq mesura">Context municipal oficial</span><p>Les dades de l'Observatori de Salt ajuden a preparar la planificació comunitària. Cada indicador conserva el seu any, definició i font.</p><a href="#v=observatori">Què ens diuen les dades oficials? →</a></div>
    <h3>Mètode Alberich</h3><p>Cada actor té una <b>forma</b> (triangle: poder o institució; rectangle: servei, tècnic o entitat; cercle: població no organitzada), un <b>nivell</b> (polític, tècnic, social) i una <b>esfera</b>. Les relacions són fortes, febles, de conflicte o indirectes; les que no tenen evidència pública es dibuixen en <span style="color:#2b6cd6">blau discontinu</span> com a hipòtesi.</p>
    <h3>Com llegir-lo</h3><p>Cada vista respon una pregunta (calaix de l'esquerra). <span class="etq mesura">Mesura</span> vol dir dada publicada amb font; <span class="etq hipotesi">Hipòtesi</span> és una suposició a validar. Un valor desconegut no es pinta mai com a zero. Feu clic en un actor per obrir-ne la fitxa; <kbd>Ctrl K</kbd> per cercar.</p>
-   <h3>Fonts</h3><p>Webs de l'ICS, l'Ajuntament de Salt, el CBSGS, el Departament d'Educació i les entitats; premsa local; Idescat (IST 2023 per secció censal); INE (seccionat censal 2023); AQuAS; OpenStreetMap. Totes les fonts (${D.fonts.length}) són a <a href="descarregues/fonts.csv">fonts.csv</a>, i cada actor i relació porta la seva URL i data.</p>
+   <h3>Fonts</h3><p>Webs de l'ICS, l'Ajuntament de Salt, el CBSGS, el Departament d'Educació i les entitats; premsa local; Idescat (IST 2023 per secció censal); INE (seccionat censal 2023); AQuAS; OpenStreetMap. Les fonts del catàleg d’actors i relacions (${D.fonts.length}) són a <a href="descarregues/fonts.csv">fonts.csv</a>, i cada actor i relació porta la seva URL i data. Les noves dades municipals provenen de l’<a href="#v=observatori">Observatori de Salt</a>, amb font i any per indicador.</p>
    <h3>Límits</h3><ul>
     <li>El repartiment oficial de carrers entre Salt 1 i Salt 2 no és públic: les zones de proximitat són una <b>hipòtesi no oficial</b>.</li>
     <li>Les distàncies són en línia recta, no temps a peu.</li>
@@ -506,10 +510,36 @@ function pintaPortada(){
     <li>Les relacions s'han deduït de documents públics; les relacions reals de l'equip falten i s'han de validar en sessió.</li>
     <li>No s'hi inclouen dades de particulars: només serveis i càrrecs públics (p. ex. «Direcció EAP»).</li></ul>
    <h3>Descàrregues</h3><ul>
-    <li><a href="descarregues/Sociograma_comunitari_CAP_Salt1_Salt2_2026.pdf">Document complet (PDF)</a> · <a href="descarregues/Sociograma_comunitari_CAP_Salt1_Salt2_2026.docx">DOCX</a></li>
+    <li><a href="descarregues/Sociograma_comunitari_CAP_Salt1_Salt2_2026.pdf">Document base (PDF)</a> · <a href="descarregues/Sociograma_comunitari_CAP_Salt1_Salt2_2026.docx">DOCX</a> · anterior a l’actualització de l’Observatori</li>
+    <li><a href="descarregues/observatori_salt_2025.csv">Indicadors oficials de l’Observatori (CSV, dades 2025)</a></li>
     <li><a href="descarregues/actors.csv">actors.csv</a> · <a href="descarregues/relacions.csv">relacions.csv</a> · <a href="descarregues/fonts.csv">fonts.csv</a> · <a href="descarregues/registre_entitats_salt_annex.csv">registre d'entitats (annex)</a></li></ul>
    <p><a class="btn" href="#v=actors">Comença: on són els actors comunitaris? →</a></p>
    <p style="font-size:12px;color:#666;margin-top:30px">Estil inspirat en Xamfrà. Mapa base © col·laboradors d'OpenStreetMap, OpenMapTiles i OpenFreeMap. Biblioteques: MapLibre GL JS, Cytoscape.js.</p>`;
+}
+function valorObservatori(i){
+  if (i.valor == null) return 'Sense dada';
+  return `${esc(typeof i.valor === 'number' ? fmt(i.valor) : i.valor)}${i.unitat ? ` <span class="obs-unitat">${esc(i.unitat)}</span>` : ''}`;
+}
+function fontObservatori(i){
+  const url = safeUrl(i.url);
+  return url ? `<a href="${esc(url)}" target="_blank" rel="noopener">${esc(i.font || 'Consulta la font')} ↗</a>` : esc(i.font || 'Font no disponible');
+}
+function pintaObservatori(){
+  const indicadors = Array.isArray(O.indicadors) ? O.indicadors : [];
+  const destacats = indicadors.filter(i => i.destacat);
+  const resta = indicadors.filter(i => !i.destacat);
+  const grups = [...new Set(resta.map(i => i.grup || 'Altres indicadors'))];
+  const oportunitats = O.oportunitats || O.oportunidades || [];
+  const llicencia = OM.licencia || OM.llicencia;
+  $('#observatori').innerHTML = `<h2>Què ens diuen les dades oficials?</h2>
+   <p class="subt">Observatori de Salt · Consulta: ${esc(OM.consultat || 'no consta')} · Àmbit: ${esc(OM.ambit || 'municipi de Salt')}</p>
+   <div class="obs-abast"><span class="etq mesura">Dades publicades</span><p>Aquestes dades descriuen el <b>municipi de Salt</b>. No són la població assignada a cada CAP ni el conjunt de l'EAP, que també inclou altres municipis. L'any i la font es mostren a cada indicador.</p>${OM.nota ? `<p>${esc(OM.nota)}</p>` : ''}</div>
+   ${destacats.length ? `<h3>Indicadors destacats</h3><div class="obs-targetes">${destacats.map(i => `<section class="obs-targeta"><p class="obs-grup">${esc(i.grup)}</p><h4>${esc(i.nom)}</h4><p class="obs-valor">${valorObservatori(i)}</p><p class="obs-any">Any / període: ${esc(i.any || 'no consta')}</p>${i.definicio ? `<p class="obs-definicio">${esc(i.definicio)}</p>` : ''}${i.nota ? `<p class="obs-nota">${esc(i.nota)}</p>` : ''}<p class="obs-font">${fontObservatori(i)}</p></section>`).join('')}</div>` : ''}
+   ${grups.length ? `<h3>Altres indicadors publicats</h3><p class="obs-ajuda">«Sense dada» indica un valor no disponible; no equival a zero. El botó CSV exporta tots els indicadors amb les fonts.</p>${grups.map(grup => `<div class="obs-taula"><table><caption>${esc(grup)}</caption><thead><tr><th scope="col">Indicador i definició</th><th scope="col">Valor</th><th scope="col">Any / període</th><th scope="col">Font</th></tr></thead><tbody>${resta.filter(i => (i.grup || 'Altres indicadors') === grup).map(i => `<tr><th scope="row">${esc(i.nom)}${i.definicio ? `<span class="obs-definicio">${esc(i.definicio)}</span>` : ''}${i.nota ? `<span class="obs-nota">${esc(i.nota)}</span>` : ''}</th><td class="obs-num">${valorObservatori(i)}</td><td>${esc(i.any || 'no consta')}</td><td>${fontObservatori(i)}</td></tr>`).join('')}</tbody></table></div>`).join('')}` : ''}
+   ${!indicadors.length ? '<p>No s\'han pogut carregar els indicadors. Pots consultar les dades a <a href="https://observatori.salt.cat/" target="_blank" rel="noopener">l\'Observatori de Salt</a>.</p>' : ''}
+   ${oportunitats.length ? `<h3>De les dades a la planificació comunitària</h3><p>Propostes de treball per contrastar amb l'equip i la comunitat. Els indicadors municipals no demostren causes ni necessitats individuals; els enllaços identifiquen actors amb qui explorar cada proposta.</p><div class="obs-oportunitats">${oportunitats.map(o => `<section class="obs-proposta"><h4>${esc(o.titol)}</h4><p>${esc(o.text)}</p><div class="obs-accions">${V[o.vista] ? `<a class="btn" href="#v=${esc(o.vista)}">${esc(V[o.vista].q)} →</a>` : ''}${(o.actors || []).filter(id => byId[id]).map(id => `<a href="#v=observatori&a=${encodeURIComponent(id)}" data-obre="${esc(id)}">${esc(byId[id].nom)}</a>`).join('')}</div></section>`).join('')}</div>` : ''}
+   <p class="obs-peu"><a href="https://observatori.salt.cat/" target="_blank" rel="noopener">Observatori de Salt ↗</a>${llicencia ? ` · ${safeUrl(llicencia.url) ? `<a href="${esc(llicencia.url)}" target="_blank" rel="noopener">${esc(llicencia.nom)}</a>` : esc(llicencia.nom)}` : ''}. Les fonts i els períodes consten a cada indicador.</p>`;
+  $('#observatori').querySelectorAll('[data-obre]').forEach(x => x.onclick = e => { e.preventDefault(); obreFitxa(x.dataset.obre); });
 }
 function pintaValidacio(){
   const h = R.filter(r => r.estat === HIP);
@@ -547,13 +577,14 @@ function llegeixHash(){
 function mostra(v, h){
   restaurant = true; estat.v = v; const t = V[v].tipus;
   document.querySelectorAll('#llista-vistes a').forEach(a => a.dataset.v === v ? a.setAttribute('aria-current','page') : a.removeAttribute('aria-current'));
-  $('#portada').hidden = v !== 'portada'; $('#validacio').hidden = v !== 'validar';
+  $('#portada').hidden = v !== 'portada'; $('#validacio').hidden = v !== 'validar'; $('#observatori').hidden = v !== 'observatori';
   $('#mapa').style.visibility = t === 'mapa' ? 'visible' : 'hidden'; $('#xarxa').style.visibility = t === 'xarxa' ? 'visible' : 'hidden';
   if (t === 'mapa') { const nou = !map; if (nou) iniciaMapa(); else { map.resize(); aplicaMapa(); }
     if (h && h.c) { const [x,y,z,pt,br] = h.c.split(',').map(Number); if (isFinite(z)) { const c = {center:[x,y], zoom:z, pitch:isFinite(pt) && es3D(v) ? pt : 0, bearing:isFinite(br) && es3D(v) ? br : 0}; if (mapLlest) map.jumpTo(c); else map._camPendent = c; } }
     else if (!nou && !(h && h.a)) vola(v); }
   if (t === 'xarxa') { if (!cy) iniciaXarxa(); cy.resize(); if (h && h.x) { const [x,y,z] = h.x.split(',').map(Number); cy.viewport({zoom:z, pan:{x,y}}); } else if (!h || !h.x) encaixaXarxa(); filtraXarxa(); }
-  if (v === 'portada') pintaPortada(); if (v === 'validar') pintaValidacio();
+  if (v === 'portada') pintaPortada(); if (v === 'validar') pintaValidacio(); if (v === 'observatori') pintaObservatori();
+  $('#btn-csv').title = v === 'observatori' ? 'Exporta els indicadors oficials amb fonts i períodes en CSV' : 'Exporta la selecció en CSV';
   pintaLlegenda(v); pintaFiltres(); pintaAnalisi();
   if (t === 'xarxa' && !(h && h.x)) encaixaXarxa();
   document.title = V[v].q + ' · Sociograma CAP Salt';
@@ -632,11 +663,12 @@ function exportaCSV(){
   const AC = ['id','nom','tipus_alberich','nivell','esfera','ambit','adreca','web_contacte_public','rol_potencial','font_url','data_font','estat_verificacio','lat','lon','precisio_geo','cap_proximitat','cap_mes_proper','dist_cap_m'];
   const RC = ['origen','origen_nom','desti','desti_nom','tipus_relacio','estat','classe','evidencia','font_url','data_font'];
   if (v === 'ist') { rows = D.seccions.features.map(f => ({seccio:f.properties.CUSEC, codi:f.properties.codi, ist_2023:f.properties.ist_2023, ist_2024_provisional:f.properties.ist_2024p, dist_centroide_cap_m:f.properties.dist_cap_centroide_m})); cols = Object.keys(rows[0]); }
+  else if (v === 'observatori') { rows = (O.indicadors || []).map(i => Object.assign({}, i, {ambit:OM.ambit || 'Municipi de Salt', consultat:OM.consultat || ''})); cols = ['id','nom','valor','unitat','any','grup','ambit','font','url','definicio','nota','consultat']; nom = 'indicadors_observatori_salt.csv'; }
   else if (v === 'validar') { rows = R.filter(r => r.estat === HIP).map(r => Object.assign({}, r, {tipus_validat:'', qui_ho_sap:'', comentari:''})); cols = RC.concat(['tipus_validat','qui_ho_sap','comentari']); nom = 'relacions_hipotesi_a_validar.csv'; }
   else if (v === 'xarxa') { const ids = new Set(cy.nodes().not('.banda').not('.amagat').map(n => n.id())); rows = A.filter(a => ids.has(a.id)); cols = AC; }
   else if (v === 'portada') { rows = A; cols = AC; nom = 'actors.csv'; }
   else { rows = actorsVista(v); cols = AC; }
-  if (estat.fitxa && v !== 'validar' && v !== 'ist' && v !== 'portada' && confirm("Exportar només l'actor seleccionat? (Cancel·la = tota la vista)")) rows = rows.filter(a => a.id === estat.fitxa);
+  if (estat.fitxa && v !== 'validar' && v !== 'ist' && v !== 'portada' && v !== 'observatori' && confirm("Exportar només l'actor seleccionat? (Cancel·la = tota la vista)")) rows = rows.filter(a => a.id === estat.fitxa);
   baixa(nom, URL.createObjectURL(new Blob([csv(rows, cols)], {type:'text/csv;charset=utf-8'}))); avis(`CSV exportat: ${rows.length} files`);
 }
 /* ---------- 2D/3D i mode presentació ---------- */
@@ -656,3 +688,4 @@ window.VISOR = {mostra, estat, fitxaSeccio, get map(){return map}, get cy(){retu
 /* ---------- inici ---------- */
 const h0 = llegeixHash(); mostra(h0.v, h0);
 })();
+

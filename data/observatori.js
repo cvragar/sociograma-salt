@@ -1,0 +1,346 @@
+window.OBSERVATORI = {
+  "metadades": {
+    "titol": "Què ens diuen les dades oficials?",
+    "consultat": "2026-10-17",
+    "ambit": "Municipi de Salt",
+    "nota": "Últim any disponible a les taules seleccionades: 2025. Són dades municipals, no població assignada als CAP Salt 1 i Salt 2 ni del conjunt de l’EAP. Els barris no equivalen a seccions censals ni a zones de CAP. Temporalitat anual; la fitxa no especifica el dia de tall. La distribució per barris inclou 2025 encara que el títol de la pàgina digui 2000–2024.",
+    "licencia": {
+      "nom": "Ajuntament de Salt · Observatori · CC BY-NC-SA 3.0 ES (llicència indicada al portal)",
+      "url": "https://creativecommons.org/licenses/by-nc-sa/3.0/es/deed.ca"
+    }
+  },
+  "indicadors": [
+    {
+      "id": "population",
+      "nom": "Població empadronada",
+      "valor": 35106,
+      "unitat": "habitants",
+      "any": 2025,
+      "grup": "Població i diversitat",
+      "font": "Padró Municipal d'Habitants de Salt · Observatori de Salt",
+      "url": "https://observatori.salt.cat/indicadors/demografia/estructura-de-la-poblacio/estructura-de-la-poblacio-per-grans-grups-dedat/",
+      "definicio": "Població empadronada",
+      "nota": "",
+      "destacat": true
+    },
+    {
+      "id": "age_0_15",
+      "nom": "0 a 15 anys",
+      "valor": 18.4,
+      "unitat": "%",
+      "any": 2025,
+      "grup": "Població i diversitat",
+      "font": "Padró Municipal d'Habitants de Salt · Observatori de Salt",
+      "url": "https://observatori.salt.cat/indicadors/demografia/estructura-de-la-poblacio/estructura-de-la-poblacio-per-grans-grups-dedat/",
+      "definicio": "0 a 15 anys",
+      "nota": "6.455 habitants; 18,4% de població total.",
+      "destacat": true
+    },
+    {
+      "id": "age_16_64",
+      "nom": "16 a 64 anys",
+      "valor": 23851,
+      "unitat": "habitants",
+      "any": 2025,
+      "grup": "Població i diversitat",
+      "font": "Padró Municipal d'Habitants de Salt · Observatori de Salt",
+      "url": "https://observatori.salt.cat/indicadors/demografia/estructura-de-la-poblacio/estructura-de-la-poblacio-per-grans-grups-dedat/",
+      "definicio": "16 a 64 anys",
+      "nota": "23.851 habitants; 67,9% de població total.",
+      "destacat": false
+    },
+    {
+      "id": "age_65_plus",
+      "nom": "65 anys i més",
+      "valor": 13.7,
+      "unitat": "%",
+      "any": 2025,
+      "grup": "Població i diversitat",
+      "font": "Padró Municipal d'Habitants de Salt · Observatori de Salt",
+      "url": "https://observatori.salt.cat/indicadors/demografia/estructura-de-la-poblacio/estructura-de-la-poblacio-per-grans-grups-dedat/",
+      "definicio": "65 anys i més",
+      "nota": "4.800 habitants; 13,7% de població total.",
+      "destacat": true
+    },
+    {
+      "id": "foreign_born",
+      "nom": "Població nascuda a l'estranger",
+      "valor": 46.4,
+      "unitat": "%",
+      "any": 2025,
+      "grup": "Població i diversitat",
+      "font": "Padró Municipal d'Habitants de Salt · Observatori de Salt",
+      "url": "https://observatori.salt.cat/indicadors/demografia/naturalesa-de-la-poblacio/naturalesa-dels-habitants/#municipi/Municipi/Pa%C3%ADs%20naixement%20estranger/anual",
+      "definicio": "Població nascuda a l'estranger",
+      "nota": "16.298 habitants; 46,4% de població total. País de naixement, no nacionalitat ni situació administrativa.",
+      "destacat": true
+    },
+    {
+      "id": "foreign_nationality",
+      "nom": "Població amb nacionalitat estrangera",
+      "valor": 12899,
+      "unitat": "habitants",
+      "any": 2025,
+      "grup": "Població i diversitat",
+      "font": "Padró Municipal d'Habitants de Salt · Observatori de Salt",
+      "url": "https://observatori.salt.cat/indicadors/demografia/naturalesa-de-la-poblacio/naturalesa-dels-habitants/#municipi/Municipi/Nacionalitat%20estrangera/anual",
+      "definicio": "Població amb nacionalitat estrangera",
+      "nota": "12.899 habitants; 36,7% de població total. Nacionalitat i país de naixement són variables diferents; no se sumen.",
+      "destacat": false
+    },
+    {
+      "id": "birth_countries",
+      "nom": "Països d'origen de la població nascuda a l'estranger",
+      "valor": 90,
+      "unitat": "països",
+      "any": 2025,
+      "grup": "Població i diversitat",
+      "font": "Padró Municipal d'Habitants de Salt · Observatori de Salt",
+      "url": "https://observatori.salt.cat/indicadors/demografia/naturalesa-de-la-poblacio/nombre-de-paisos-origen-de-la-poblacio-nascuda-a-lestranger-per-continents/",
+      "definicio": "Països d'origen de la població nascuda a l'estranger",
+      "nota": "No és el nombre de nacionalitats.",
+      "destacat": false
+    },
+    {
+      "id": "single_households",
+      "nom": "Domicilis amb una sola persona empadronada",
+      "valor": 2133,
+      "unitat": "domicilis",
+      "any": 2025,
+      "grup": "Llars i densitat",
+      "font": "Padró Municipal d'Habitants de Salt · Observatori de Salt",
+      "url": "https://observatori.salt.cat/indicadors/demografia/composicio-de-les-llars/llars-unipersonals-per-grups-dedat-dels-ocupants/",
+      "definicio": "Domicilis amb una sola persona empadronada",
+      "nota": "Viure sol no mesura soledat no volguda.",
+      "destacat": false
+    },
+    {
+      "id": "single_households_over_80_label",
+      "nom": "Llars unipersonals: Més de 80 anys",
+      "valor": 360,
+      "unitat": "domicilis",
+      "any": 2025,
+      "grup": "Llars i densitat",
+      "font": "Padró Municipal d'Habitants de Salt · Observatori de Salt",
+      "url": "https://observatori.salt.cat/indicadors/demografia/composicio-de-les-llars/llars-unipersonals-per-grups-dedat-dels-ocupants/",
+      "definicio": "Llars unipersonals: Més de 80 anys",
+      "nota": "360 domicilis; 16,9% de total de llars unipersonals. La font identifica aquest grup com «Més de 80 anys», sense precisar el límit. Viure sol no mesura soledat no volguda.",
+      "destacat": false
+    },
+    {
+      "id": "household_occupancy",
+      "nom": "Ocupació mitjana dels domicilis",
+      "valor": 3.32,
+      "unitat": "persones/domicili",
+      "any": 2025,
+      "grup": "Llars i densitat",
+      "font": "Padró Municipal d'Habitants de Salt · Observatori de Salt",
+      "url": "https://observatori.salt.cat/indicadors/demografia/composicio-de-les-llars/ocupacio-mitjana-dels-domicilis/",
+      "definicio": "nombre d'habitants empadronats / nombre de domicilis amb població empadronada",
+      "nota": "",
+      "destacat": false
+    },
+    {
+      "id": "gross_density",
+      "nom": "Densitat de població bruta",
+      "valor": 5311.7,
+      "unitat": "hab/km²",
+      "any": 2025,
+      "grup": "Llars i densitat",
+      "font": "Padró Municipal d'Habitants de Salt · Observatori de Salt",
+      "url": "https://observatori.salt.cat/indicadors/demografia/distribucio-de-la-poblacio/densitat-bruta-habkm2-de-la-poblacio-de-salt/",
+      "definicio": "nombre absolut d'habitants per àmbit / superfície total àmbit (km²)",
+      "nota": "",
+      "destacat": false
+    },
+    {
+      "id": "barri_0",
+      "nom": "Barri dels Escriptors",
+      "valor": 1379,
+      "unitat": "habitants",
+      "any": 2025,
+      "grup": "Població per barri",
+      "font": "Padró Municipal d'Habitants de Salt · Observatori de Salt",
+      "url": "https://observatori.salt.cat/indicadors/demografia/distribucio-de-la-poblacio/distribucio-de-la-poblacio-per-barris-2000-2024/",
+      "definicio": "Població empadronada al barri; no és una zona de cobertura de CAP.",
+      "nota": "3,9% de la població municipal. "
+    },
+    {
+      "id": "barri_1",
+      "nom": "Barri Vell",
+      "valor": 3010,
+      "unitat": "habitants",
+      "any": 2025,
+      "grup": "Població per barri",
+      "font": "Padró Municipal d'Habitants de Salt · Observatori de Salt",
+      "url": "https://observatori.salt.cat/indicadors/demografia/distribucio-de-la-poblacio/distribucio-de-la-poblacio-per-barris-2000-2024/",
+      "definicio": "Població empadronada al barri; no és una zona de cobertura de CAP.",
+      "nota": "8,6% de la població municipal. "
+    },
+    {
+      "id": "barri_2",
+      "nom": "Barri Centre",
+      "valor": 12261,
+      "unitat": "habitants",
+      "any": 2025,
+      "grup": "Població per barri",
+      "font": "Padró Municipal d'Habitants de Salt · Observatori de Salt",
+      "url": "https://observatori.salt.cat/indicadors/demografia/distribucio-de-la-poblacio/distribucio-de-la-poblacio-per-barris-2000-2024/",
+      "definicio": "Població empadronada al barri; no és una zona de cobertura de CAP.",
+      "nota": "34,9% de la població municipal. "
+    },
+    {
+      "id": "barri_3",
+      "nom": "Barri del Veïnat",
+      "valor": 9142,
+      "unitat": "habitants",
+      "any": 2025,
+      "grup": "Població per barri",
+      "font": "Padró Municipal d'Habitants de Salt · Observatori de Salt",
+      "url": "https://observatori.salt.cat/indicadors/demografia/distribucio-de-la-poblacio/distribucio-de-la-poblacio-per-barris-2000-2024/",
+      "definicio": "Població empadronada al barri; no és una zona de cobertura de CAP.",
+      "nota": "26,0% de la població municipal. "
+    },
+    {
+      "id": "barri_4",
+      "nom": "Barri del Pla",
+      "valor": 449,
+      "unitat": "habitants",
+      "any": 2025,
+      "grup": "Població per barri",
+      "font": "Padró Municipal d'Habitants de Salt · Observatori de Salt",
+      "url": "https://observatori.salt.cat/indicadors/demografia/distribucio-de-la-poblacio/distribucio-de-la-poblacio-per-barris-2000-2024/",
+      "definicio": "Població empadronada al barri; no és una zona de cobertura de CAP.",
+      "nota": "1,3% de la població municipal. "
+    },
+    {
+      "id": "barri_5",
+      "nom": "Barri de la Maçana",
+      "valor": 5499,
+      "unitat": "habitants",
+      "any": 2025,
+      "grup": "Població per barri",
+      "font": "Padró Municipal d'Habitants de Salt · Observatori de Salt",
+      "url": "https://observatori.salt.cat/indicadors/demografia/distribucio-de-la-poblacio/distribucio-de-la-poblacio-per-barris-2000-2024/",
+      "definicio": "Població empadronada al barri; no és una zona de cobertura de CAP.",
+      "nota": "15,7% de la població municipal. "
+    },
+    {
+      "id": "barri_6",
+      "nom": "Barri del Mas Masó - Hospital",
+      "valor": 3323,
+      "unitat": "habitants",
+      "any": 2025,
+      "grup": "Població per barri",
+      "font": "Padró Municipal d'Habitants de Salt · Observatori de Salt",
+      "url": "https://observatori.salt.cat/indicadors/demografia/distribucio-de-la-poblacio/distribucio-de-la-poblacio-per-barris-2000-2024/",
+      "definicio": "Població empadronada al barri; no és una zona de cobertura de CAP.",
+      "nota": "9,5% de la població municipal. "
+    },
+    {
+      "id": "barri_7",
+      "nom": "Altres",
+      "valor": 43,
+      "unitat": "habitants",
+      "any": 2025,
+      "grup": "Població per barri",
+      "font": "Padró Municipal d'Habitants de Salt · Observatori de Salt",
+      "url": "https://observatori.salt.cat/indicadors/demografia/distribucio-de-la-poblacio/distribucio-de-la-poblacio-per-barris-2000-2024/",
+      "definicio": "Població empadronada al barri; no és una zona de cobertura de CAP.",
+      "nota": "0,1% de la població municipal. Disseminats de Mas Ribot, Can Genura, El Sitjar i barri de Torre Mirona"
+    },
+    {
+      "id": "barri_8",
+      "nom": "Adreça desconeguda",
+      "valor": 0,
+      "unitat": "habitants",
+      "any": 2025,
+      "grup": "Població per barri",
+      "font": "Padró Municipal d'Habitants de Salt · Observatori de Salt",
+      "url": "https://observatori.salt.cat/indicadors/demografia/distribucio-de-la-poblacio/distribucio-de-la-poblacio-per-barris-2000-2024/",
+      "definicio": "Població empadronada al barri; no és una zona de cobertura de CAP.",
+      "nota": "0% de la població municipal. "
+    },
+    {
+      "id": "habitatges_padro",
+      "nom": "Habitatges amb persones empadronades",
+      "valor": 10526,
+      "unitat": "habitatges",
+      "any": 2025,
+      "grup": "Habitatge",
+      "font": "Àrea de Territori, Ajuntament de Salt · Observatori de Salt",
+      "url": "https://observatori.salt.cat/indicadors/territori/habitatge/habitatges-amb-persones-empadronades/",
+      "definicio": "Habitatges amb o sense persones empadronades, segons la taula municipal.",
+      "nota": "Es reprodueixen els recomptes. No es reutilitzen els percentatges publicats: 91,1% + 9,5% no coincideixen amb el total del 101% mostrat a la font. Sense padró no acredita que un habitatge estigui buit."
+    },
+    {
+      "id": "habitatges_sense_padro",
+      "nom": "Habitatges sense persones empadronades",
+      "valor": 1098,
+      "unitat": "habitatges",
+      "any": 2025,
+      "grup": "Habitatge",
+      "font": "Àrea de Territori, Ajuntament de Salt · Observatori de Salt",
+      "url": "https://observatori.salt.cat/indicadors/territori/habitatge/habitatges-amb-persones-empadronades/",
+      "definicio": "Habitatges amb o sense persones empadronades, segons la taula municipal.",
+      "nota": "Es reprodueixen els recomptes. No es reutilitzen els percentatges publicats: 91,1% + 9,5% no coincideixen amb el total del 101% mostrat a la font. Sense padró no acredita que un habitatge estigui buit."
+    },
+    {
+      "id": "habitatges_total",
+      "nom": "Total d’habitatges de la taula de padró",
+      "valor": 11624,
+      "unitat": "habitatges",
+      "any": 2025,
+      "grup": "Habitatge",
+      "font": "Àrea de Territori, Ajuntament de Salt · Observatori de Salt",
+      "url": "https://observatori.salt.cat/indicadors/territori/habitatge/habitatges-amb-persones-empadronades/",
+      "definicio": "Habitatges amb o sense persones empadronades, segons la taula municipal.",
+      "nota": "Es reprodueixen els recomptes. No es reutilitzen els percentatges publicats: 91,1% + 9,5% no coincideixen amb el total del 101% mostrat a la font. Sense padró no acredita que un habitatge estigui buit."
+    }
+  ],
+  "oportunitats": [
+    {
+      "titol": "Infància i famílies",
+      "text": "6.455 habitants de 0 a 15 anys. Proposta a validar amb la Comissió: planificar activitats amb escoles, SOAF i entitats de famílies; contrastar la participació real i les necessitats amb les famílies.",
+      "vista": "educatiu",
+      "actors": [
+        "S04",
+        "E02",
+        "SS03",
+        "T02"
+      ]
+    },
+    {
+      "titol": "Acollida i participació",
+      "text": "El 46,4% ha nascut a l’estranger; el 36,7% té nacionalitat estrangera. Proposta: acordar canals de participació amb Acollida i mediació. Aquestes dades no identifiquen llengües, creences, barreres individuals ni necessitats assistencials.",
+      "vista": "diversitat",
+      "actors": [
+        "SS10",
+        "SS26",
+        "T03"
+      ]
+    },
+    {
+      "titol": "Envelliment i xarxes de suport",
+      "text": "4.800 persones de 65 anys i més i 360 llars unipersonals al grup literal «Més de 80 anys». Proposta: explorar amb Gent Gran i la Taula de Soledat la participació en activitats i el suport social. Viure sol no implica soledat no volguda.",
+      "vista": "tercer",
+      "actors": [
+        "SS02",
+        "SS29",
+        "G02",
+        "T01"
+      ]
+    },
+    {
+      "titol": "Activitats de proximitat als barris",
+      "text": "Centre té 12.261 habitants i Veïnat, 9.142. Proposta: contrastar equipaments, accessibilitat i participació en aquests barris i en la resta del municipi abans de distribuir activitats. La població i el padró d’habitatges no mesuren per si sols vulnerabilitat ni cobertura dels CAP.",
+      "vista": "actors",
+      "actors": [
+        "C01",
+        "SS01",
+        "SS14",
+        "S04"
+      ]
+    }
+  ]
+};

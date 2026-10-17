@@ -1,0 +1,69 @@
+{
+  "title": "Observatori de Salt — demografia municipal",
+  "checkedAt": "2026-10-17",
+  "referenceYear": 2025,
+  "scope": "Municipi de Salt",
+  "publisher": "Ajuntament de Salt — Observatori de Salt",
+  "primarySource": "Padró Municipal d'Habitants de Salt",
+  "accessMethod": "Lectura de taules visibles amb navegador Chrome; web search i curl no podien accedir al domini.",
+  "notes": [
+    "Any de les dades: 2025. No etiquetar-les com a dades demogràfiques de 2026.",
+    "Les pàgines consultades indiquen temporalitat anual, sense precisar el dia de tall en la definició visible.",
+    "Dades del padró municipal; no atribuir-les a una altra sèrie INE/Idescat.",
+    "L'àmbit és municipal. Els barris no equivalen a les àrees de cobertura CAP Salt 1 / CAP Salt 2, i les dades no són població assignada als CAP.",
+    "Nacionalitat estrangera i naixement a l'estranger són indicadors diferents; no sumar-los.",
+    "Llars unipersonals no mesura solitud no volguda.",
+    "La fitxa de distribució per barris conserva 2000-2024 al títol i URL, però la taula inclou columna 2025.",
+    "La fitxa Evolució 2000-2025 no carregava cap taula el 17/10/2026. La fitxa 2000-2024 mostra fins a 2024. La població 2025 està verificada a estructura, naturalesa i barris."
+  ],
+  "sources": {
+    "age": "https://observatori.salt.cat/indicadors/demografia/estructura-de-la-poblacio/estructura-de-la-poblacio-per-grans-grups-dedat/",
+    "origin": "https://observatori.salt.cat/indicadors/demografia/naturalesa-de-la-poblacio/naturalesa-dels-habitants/",
+    "originCountries": "https://observatori.salt.cat/indicadors/demografia/naturalesa-de-la-poblacio/nombre-de-paisos-origen-de-la-poblacio-nascuda-a-lestranger-per-continents/",
+    "singleHouseholds": "https://observatori.salt.cat/indicadors/demografia/composicio-de-les-llars/llars-unipersonals-per-grups-dedat-dels-ocupants/",
+    "householdOccupancy": "https://observatori.salt.cat/indicadors/demografia/composicio-de-les-llars/ocupacio-mitjana-dels-domicilis/",
+    "density": "https://observatori.salt.cat/indicadors/demografia/distribucio-de-la-poblacio/densitat-bruta-habkm2-de-la-poblacio-de-salt/",
+    "neighborhoods": "https://observatori.salt.cat/indicadors/demografia/distribucio-de-la-poblacio/distribucio-de-la-poblacio-per-barris-2000-2024/",
+    "populationThrough2024": "https://observatori.salt.cat/indicadors/demografia/evolucio-de-la-poblacio/evolucio-de-la-poblacio-2000-2024/"
+  },
+  "metrics2025": [
+    {"id":"population","label":"Població empadronada","value":35106,"unit":"habitants","source":"age"},
+    {"id":"age_0_15","label":"0 a 15 anys","value":6455,"percent":18.4,"unit":"habitants","denominator":"població total","source":"age"},
+    {"id":"age_16_64","label":"16 a 64 anys","value":23851,"percent":67.9,"unit":"habitants","denominator":"població total","source":"age"},
+    {"id":"age_65_plus","label":"65 anys i més","value":4800,"percent":13.7,"unit":"habitants","denominator":"població total","source":"age"},
+    {"id":"foreign_born","label":"Població nascuda a l'estranger","value":16298,"percent":46.4,"unit":"habitants","denominator":"població total","source":"origin","variant":"País naixement estranger"},
+    {"id":"foreign_nationality","label":"Població amb nacionalitat estrangera","value":12899,"percent":36.7,"unit":"habitants","denominator":"població total","source":"origin","variant":"Nacionalitat estrangera"},
+    {"id":"birth_countries","label":"Països d'origen de la població nascuda a l'estranger","value":90,"unit":"països","source":"originCountries","note":"No és el nombre de nacionalitats."},
+    {"id":"single_households","label":"Domicilis amb una sola persona empadronada","value":2133,"unit":"domicilis","source":"singleHouseholds"},
+    {"id":"single_households_over_80_label","label":"Llars unipersonals: Més de 80 anys","value":360,"percent":16.9,"unit":"domicilis","denominator":"total de llars unipersonals","source":"singleHouseholds","note":"La font identifica aquest grup com «Més de 80 anys», sense precisar el límit."},
+    {"id":"household_occupancy","label":"Ocupació mitjana dels domicilis","value":3.32,"unit":"persones/domicili","source":"householdOccupancy","definition":"nombre d'habitants empadronats / nombre de domicilis amb població empadronada"},
+    {"id":"gross_density","label":"Densitat de població bruta","value":5311.7,"unit":"hab/km²","source":"density","definition":"nombre absolut d'habitants per àmbit / superfície total àmbit (km²)"}
+  ],
+  "recentSeries": [
+    {"year":2020,"population":31796,"age0to15":6786,"age0to15Percent":21.3,"age16to64":20918,"age16to64Percent":65.8,"age65plus":4092,"age65plusPercent":12.9,"foreignBorn":12695,"foreignBornPercent":39.9,"foreignNationality":11902,"foreignNationalityPercent":37.4,"singleHouseholds":2125,"householdOccupancy":3.18,"grossDensity":4810.9},
+    {"year":2021,"population":31763,"age0to15":6770,"age0to15Percent":21.3,"age16to64":20859,"age16to64Percent":65.7,"age65plus":4134,"age65plusPercent":13.0,"foreignBorn":12809,"foreignBornPercent":40.3,"foreignNationality":11637,"foreignNationalityPercent":36.6,"singleHouseholds":2180,"householdOccupancy":3.15,"grossDensity":4805.9},
+    {"year":2022,"population":32742,"age0to15":6929,"age0to15Percent":21.2,"age16to64":21537,"age16to64Percent":65.8,"age65plus":4276,"age65plusPercent":13.1,"foreignBorn":13741,"foreignBornPercent":42.0,"foreignNationality":12057,"foreignNationalityPercent":36.8,"singleHouseholds":2155,"householdOccupancy":3.19,"grossDensity":4954.0},
+    {"year":2023,"population":33440,"age0to15":6914,"age0to15Percent":20.7,"age16to64":22156,"age16to64Percent":66.3,"age65plus":4370,"age65plusPercent":13.1,"foreignBorn":14569,"foreignBornPercent":43.6,"foreignNationality":12254,"foreignNationalityPercent":36.6,"singleHouseholds":2153,"householdOccupancy":3.23,"grossDensity":5059.7},
+    {"year":2024,"population":34079,"age0to15":6856,"age0to15Percent":20.1,"age16to64":22718,"age16to64Percent":66.7,"age65plus":4505,"age65plusPercent":13.2,"foreignBorn":15202,"foreignBornPercent":44.6,"foreignNationality":12371,"foreignNationalityPercent":36.3,"singleHouseholds":2152,"householdOccupancy":3.25,"grossDensity":5156.3},
+    {"year":2025,"population":35106,"age0to15":6455,"age0to15Percent":18.4,"age16to64":23851,"age16to64Percent":67.9,"age65plus":4800,"age65plusPercent":13.7,"foreignBorn":16298,"foreignBornPercent":46.4,"foreignNationality":12899,"foreignNationalityPercent":36.7,"singleHouseholds":2133,"householdOccupancy":3.32,"grossDensity":5311.7}
+  ],
+  "neighborhoods2025": [
+    {"label":"Barri dels Escriptors","population":1379,"percent":3.9},
+    {"label":"Barri Vell","population":3010,"percent":8.6},
+    {"label":"Barri Centre","population":12261,"percent":34.9},
+    {"label":"Barri del Veïnat","population":9142,"percent":26.0},
+    {"label":"Barri del Pla","population":449,"percent":1.3},
+    {"label":"Barri de la Maçana","population":5499,"percent":15.7},
+    {"label":"Barri del Mas Masó - Hospital","population":3323,"percent":9.5},
+    {"label":"Altres","population":43,"percent":0.1,"note":"Disseminats de Mas Ribot, Can Genura, El Sitjar i barri de Torre Mirona"},
+    {"label":"Adreça desconeguda","population":0,"percent":0}
+  ],
+  "singleHouseholdsByAge2025": [
+    {"label":"0-16 anys","value":4,"percent":0.2},
+    {"label":"17-35 anys","value":260,"percent":12.2},
+    {"label":"36-59 anys","value":760,"percent":35.6},
+    {"label":"60-69 anys","value":371,"percent":17.4},
+    {"label":"70-79 anys","value":378,"percent":17.7},
+    {"label":"Més de 80 anys","value":360,"percent":16.9}
+  ]
+}

@@ -2,6 +2,23 @@
 
 Visor web estàtic (sense backend) del sociograma comunitari del territori dels CAP Salt 1 i Salt 2 (EAP Salt, ICS Girona, ABS 199), segons el mètode Alberich. Queden fora els pobles d'Aiguaviva, Bescanó (amb Estanyol i Vilanna), Fornells de la Selva i Vilablareix. L'estil s'inspira en Xamfrà: un calaix de vistes, cadascuna formulada com una pregunta, i una llegenda per vista amb la font, l'any i el mètode.
 
+## Actualització de l’Observatori de Salt · 17/10/2026
+
+La vista **Què ens diuen les dades oficials?** (`#v=observatori`) integra 23 indicadors seleccionats de l’[Observatori de Salt](https://observatori.salt.cat/), amb dades de **2025**, font, definició i enllaç a la taula original. Inclou població per edat, naixement i nacionalitat, llars, densitat, població per barris i habitatges amb/sense empadronament. Manté el mapa i la xarxa originals i connecta quatre propostes de planificació amb actors ja existents. Les propostes són orientacions a validar, no conclusions publicades per l’Observatori.
+
+- Àmbit: municipi de Salt. No representa la població assignada als dos CAP ni la de tot l’EAP; barris, seccions censals i zones de CAP no són intercanviables.
+- Any de referència: 2025; consulta: 17/10/2026. La font indica periodicitat anual, sense data exacta de tall visible. El títol de la pàgina de barris conserva «2000–2024», però la taula ja inclou 2025.
+- Naixement a l’estranger i nacionalitat estrangera són variables diferents. Viure sol no acredita soledat no volguda. Els 90 països corresponen al naixement a l’estranger, no a nacionalitats.
+- Habitatge: es reprodueixen els recomptes 10.526 amb padró, 1.098 sense padró i 11.624 totals. S’ometen els percentatges inconsistents de la font (91,1%, 9,5% i total mostrat de 101%). No s’equipara «sense padró» amb habitatge buit.
+- Els PDF/DOCX anteriors són documents base; aquesta actualització correspon al visor i al nou CSV.
+- Atribució: Ajuntament de Salt, Observatori de Salt; Padró Municipal d’Habitants i Àrea de Territori. El portal indica [CC BY-NC-SA 3.0 ES](https://creativecommons.org/licenses/by-nc-sa/3.0/es/deed.ca).
+
+Fitxers:
+- `data/observatori-fonts.json`: transcripció de les taules demogràfiques consultades, amb sèries i URLs.
+- `data/observatori.json` i `data/observatori.js`: dades publicades, independents del bundle d’actors.
+- `descarregues/observatori_salt_2025.csv`: exportació amb fonts i dates; el botó CSV de la vista exporta també els indicadors.
+- `scripts/build_observatori.py`: regenera els fitxers amb Python estàndard. Comprova les sumes d’edats, barris i llars, i l’existència dels actors enllaçats. Executar `python3 scripts/build_observatori.py`.
+
 ## Com obrir-lo
 ```
 cd visor_sociograma_salt
@@ -75,3 +92,4 @@ L'únic recurs extern són les teseles del mapa base (OpenFreeMap, positron), qu
 - **Es mantenen en 2D**: «Quina zona cobreix cada CAP?» (hipòtesi de proximitat), «Qui queda lluny d'un CAP?», el sociograma de xarxa i les llistes.
 - **Mòbil** (≤ 760 px o ≤ 4 nuclis): pitch màxim de 40°, sense edificis 3D, columnes i arcs amb menys vèrtexs.
 - **Prova**: `python3 -m http.server 8765` i `python3 scripts/test_3d.py` (Chromium headless amb SwiftShader). Captures a `captures/3d_*.png`.
+

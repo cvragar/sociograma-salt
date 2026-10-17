@@ -230,3 +230,35 @@ dialog::backdrop{background:rgba(16,32,48,.35);backdrop-filter:blur(2px)}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 #filtres fieldset>*:not(legend){clear:both}
 #filtres fieldset::after{content:"";display:block;clear:both}
+
+/* Observatori: context municipal i propostes comunitàries */
+.obs-portada,.obs-abast{background:#fff;border:1px solid var(--ln);border-left:4px solid var(--ac2);border-radius:var(--r);padding:16px 20px;margin:20px 0;box-shadow:var(--sh1)}
+.obs-portada p,.obs-abast p{margin:8px 0;font-size:14px}
+.obs-portada>a{font-weight:650}
+.obs-targetes{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.obs-targeta,.obs-proposta{background:#fff;border:1px solid var(--ln);border-radius:var(--r);padding:18px 20px;box-shadow:var(--sh1)}
+.obs-targeta h4,.obs-proposta h4{margin:0;font-size:16px;line-height:1.35;color:var(--ac)}
+.obs-targeta .obs-grup{margin:0 0 8px;color:var(--mu);font-size:11px;text-transform:uppercase;letter-spacing:.06em}
+.obs-targeta .obs-valor{font-size:32px;font-weight:700;line-height:1.2;letter-spacing:-.02em;color:var(--tx);margin:14px 0 4px;font-variant-numeric:tabular-nums}
+.obs-unitat{font-size:.6em;font-weight:500;letter-spacing:0}
+.obs-targeta .obs-any{font-size:12px;color:var(--mu);margin:0 0 12px}
+#observatori .obs-definicio{display:block;font-size:12.5px;font-weight:400;color:var(--mu);line-height:1.5;margin:6px 0 0}
+#observatori .obs-nota{display:block;font-size:12px;font-weight:400;color:#68511e;line-height:1.5;margin:6px 0 0}
+.obs-targeta .obs-font{font-size:12px;line-height:1.45;border-top:1px solid var(--ln);padding-top:10px;margin:12px 0 0}
+.obs-font a,.obs-taula a{overflow-wrap:anywhere}
+#observatori .obs-ajuda{font-size:13px;color:var(--mu)}
+.obs-taula{overflow-x:auto;margin:14px 0 24px;border-radius:var(--r);box-shadow:var(--sh1)}
+.obs-taula table{box-shadow:none;min-width:560px}
+.obs-taula caption{text-align:left;padding:10px 14px;background:var(--ac);color:#fff;font-weight:650;font-size:14px}
+.obs-taula th[scope=row]{background:#fff;color:var(--tx);font-weight:600;width:44%}
+.obs-taula td{min-width:90px}
+.obs-taula td:last-child{width:23%}
+.obs-taula .obs-num{font-weight:650;font-variant-numeric:tabular-nums;white-space:nowrap}
+.obs-taula .obs-unitat{font-size:1em;font-weight:400}
+.obs-oportunitats{display:grid;gap:12px}
+.obs-proposta p{font-size:14px;margin:8px 0 14px}
+.obs-accions{display:flex;align-items:center;flex-wrap:wrap;gap:10px 14px;font-size:12px}
+.obs-accions>a.btn{font-size:12px;padding:7px 12px}
+#observatori .obs-peu{font-size:12px;color:var(--mu);border-top:1px solid var(--ln);padding-top:18px;margin-top:28px}
+@media(max-width:1000px){.obs-targetes{grid-template-columns:1fr}}
+
