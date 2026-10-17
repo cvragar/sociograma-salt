@@ -455,6 +455,13 @@ for name in ['Title','Subtitle','Heading 1','Heading 2','Heading 3']:
 for border in original[0]._p.xpath('./w:pPr/w:pBdr'):
     border.getparent().remove(border)
 for p in d.paragraphs:
+    # Keep the retained form caption with its table and remove an internal cache
+    # location from the public bibliography without changing its source.
+    if p.text.startswith('Fitxa de validació de relacions'):
+        p.paragraph_format.keep_with_next=True
+    if p.text.startswith('[MEM_IAS]'):
+        for r in p.runs:
+            r.text=r.text.replace(', PDF en /workspace/fuentes-cache/salt/memoria_IAS_2024.pdf','')
     if p.style.name in ['Title','Subtitle'] or p.style.name.startswith('Heading'):
         for r in p.runs:r.font.color.rgb=RGBColor(0,0,0)
 for t in original_tables:
