@@ -4,6 +4,11 @@
 const D = window.DADES;
 const O = window.OBSERVATORI || {indicadors:[]};
 const OM = O.metadades || O.metadatos || O;
+const OC = window.OBSERVATORI_CATALEG || {fitxes:[],metadades:{}};
+const OCM = OC.metadades || {};
+const OCF = Array.isArray(OC.fitxes) ? OC.fitxes : [];
+const OBS_CATEGORIES = {'demografia':'Demografia','medi-ambient':'Medi ambient','territori':'Territori'};
+const obsEstat = {q:'',categoria:'',subcategoria:'',estat:'',id:'',variant:'',anys:'latest'};
 const $ = s => document.querySelector(s);
 const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const safeUrl = u => /^https?:\/\//i.test(u||'') ? u : null;
@@ -510,8 +515,9 @@ function pintaPortada(){
     <li>Les relacions s'han deduït de documents públics; les relacions reals de l'equip falten i s'han de validar en sessió.</li>
     <li>No s'hi inclouen dades de particulars: només serveis i càrrecs públics (p. ex. «Direcció EAP»).</li></ul>
    <h3>Descàrregues</h3><ul>
-    <li><a href="descarregues/Sociograma_comunitari_CAP_Salt1_Salt2_2026.pdf">Document base (PDF)</a> · <a href="descarregues/Sociograma_comunitari_CAP_Salt1_Salt2_2026.docx">DOCX</a> · anterior a l’actualització de l’Observatori</li>
-    <li><a href="descarregues/observatori_salt_2025.csv">Indicadors oficials de l’Observatori (CSV, dades 2025)</a></li>
+    <li><a href="descarregues/Sociograma_Salt_Observatori_complet_2026-10-17.pdf">Actualització amb l’Observatori (PDF)</a> · <a href="descarregues/Sociograma_Salt_Observatori_complet_2026-10-17.docx">DOCX</a></li>
+    <li><a href="descarregues/observatori_dades_completes.zip">Catàleg complet de l’Observatori i sèries històriques (CSV en ZIP)</a> · <a href="descarregues/observatori_cobertura.csv">Cobertura</a></li>
+    <li><a href="descarregues/Sociograma_comunitari_CAP_Salt1_Salt2_2026.pdf">Document base anterior (PDF)</a> · <a href="descarregues/Sociograma_comunitari_CAP_Salt1_Salt2_2026.docx">DOCX</a></li>
     <li><a href="descarregues/actors.csv">actors.csv</a> · <a href="descarregues/relacions.csv">relacions.csv</a> · <a href="descarregues/fonts.csv">fonts.csv</a> · <a href="descarregues/registre_entitats_salt_annex.csv">registre d'entitats (annex)</a></li></ul>
    <p><a class="btn" href="#v=actors">Comença: on són els actors comunitaris? →</a></p>
    <p style="font-size:12px;color:#666;margin-top:30px">Estil inspirat en Xamfrà. Mapa base © col·laboradors d'OpenStreetMap, OpenMapTiles i OpenFreeMap. Biblioteques: MapLibre GL JS, Cytoscape.js.</p>`;
@@ -524,6 +530,34 @@ function fontObservatori(i){
   const url = safeUrl(i.url);
   return url ? `<a href="${esc(url)}" target="_blank" rel="noopener">${esc(i.font || 'Consulta la font')} ↗</a>` : esc(i.font || 'Font no disponible');
 }
+function obsText(s){ return String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase(); }
+function obsCat(f){ return OBS_CATEGORIES[f.categoria] || f.categoria || 'Altres'; }
+function obsDisponible(f){ return (f.variants || []).some(v => (v.tables || []).some(t => (t.rows || []).length)); }
+function obsVariantKey(v, i){ return String(v.hash || i); }
+function obsColumnes(t){
+  if (Array.isArray(t.columnes)) return t.columnes;
+  const h = t.headers || [];
+  if (!Array.isArray(h[0])) return h;
+  const n = Math.max(0, ...h.map(r => r.length));
+  return Array.from({length:n}, (_,i) => [...new Set(h.map(r => r[i]).filter(x => x != null && x !== ''))].join(' · '));
+}
+function obsAnys(t){ return (t.anys || obsColumnes(t).map(h => /^(19|20)\d{2}$/.test(h) ? Number(h) : null)).map(y => y == null || y === '' ? null : Number(y)); }
+function obsFiltrades(){
+  const mots = obsText(obsEstat.q).trim().split(/\s+/).filter(Boolean);
+  return OCF.filter(f => (!obsEstat.categoria || f.categoria === obsEstat.categoria) && (!obsEstat.subcategoria || f.subcategoria === obsEstat.subcategoria) && (!obsEstat.estat || obsDisponible(f) === (obsEstat.estat === 'disponible')) && mots.every(m => obsText([f.titol,f.subcategoria,obsCat(f),f.definicio].join(' ')).includes(m)));
+}
+function obsSeleccio(){
+  const f = obsFiltrades().find(x => x.id === obsEstat.id);
+  if (!f) return {f:null,v:null};
+  const variants = f.variants || [];
+  const v = variants.find((x,i) => obsVariantKey(x,i) === obsEstat.variant) || variants.find((x,i) => obsVariantKey(x,i) === f.variant_per_defecte) || variants.find(x => (x.tables || []).some(t => t.rows && t.rows.length)) || variants[0];
+  return {f,v};
+}
+function obsEstatText(f){ return obsDisponible(f) ? 'Amb taules' : 'Taula no recuperada'; }
+function obsFontEnllac(url, text){ const u = safeUrl(url); return u ? `<a href="${esc(u)}" target="_blank" rel="noopener">${esc(text)} ↗</a>` : esc(text); }
+function obsResumTargeta(i){
+  return `<section class="obs-targeta"><p class="obs-grup">${esc(i.grup)}</p><h4>${esc(i.nom)}</h4><p class="obs-valor">${valorObservatori(i)}</p><p class="obs-any">Any / període: ${esc(i.any || 'no consta')}</p>${i.nota ? `<p class="obs-nota">${esc(i.nota)}</p>` : ''}<p class="obs-font">${fontObservatori(i)}</p></section>`;
+}
 function pintaObservatori(){
   const indicadors = Array.isArray(O.indicadors) ? O.indicadors : [];
   const destacats = indicadors.filter(i => i.destacat);
@@ -531,15 +565,116 @@ function pintaObservatori(){
   const grups = [...new Set(resta.map(i => i.grup || 'Altres indicadors'))];
   const oportunitats = O.oportunitats || O.oportunidades || [];
   const llicencia = OM.licencia || OM.llicencia;
+  const disponibles = OCF.filter(obsDisponible).length;
   $('#observatori').innerHTML = `<h2>Què ens diuen les dades oficials?</h2>
-   <p class="subt">Observatori de Salt · Consulta: ${esc(OM.consultat || 'no consta')} · Àmbit: ${esc(OM.ambit || 'municipi de Salt')}</p>
-   <div class="obs-abast"><span class="etq mesura">Dades publicades</span><p>Aquestes dades descriuen el <b>municipi de Salt</b>. No són la població assignada a cada CAP ni el conjunt de l'EAP, que també inclou altres municipis. L'any i la font es mostren a cada indicador.</p>${OM.nota ? `<p>${esc(OM.nota)}</p>` : ''}</div>
-   ${destacats.length ? `<h3>Indicadors destacats</h3><div class="obs-targetes">${destacats.map(i => `<section class="obs-targeta"><p class="obs-grup">${esc(i.grup)}</p><h4>${esc(i.nom)}</h4><p class="obs-valor">${valorObservatori(i)}</p><p class="obs-any">Any / període: ${esc(i.any || 'no consta')}</p>${i.definicio ? `<p class="obs-definicio">${esc(i.definicio)}</p>` : ''}${i.nota ? `<p class="obs-nota">${esc(i.nota)}</p>` : ''}<p class="obs-font">${fontObservatori(i)}</p></section>`).join('')}</div>` : ''}
-   ${grups.length ? `<h3>Altres indicadors publicats</h3><p class="obs-ajuda">«Sense dada» indica un valor no disponible; no equival a zero. El botó CSV exporta tots els indicadors amb les fonts.</p>${grups.map(grup => `<div class="obs-taula"><table><caption>${esc(grup)}</caption><thead><tr><th scope="col">Indicador i definició</th><th scope="col">Valor</th><th scope="col">Any / període</th><th scope="col">Font</th></tr></thead><tbody>${resta.filter(i => (i.grup || 'Altres indicadors') === grup).map(i => `<tr><th scope="row">${esc(i.nom)}${i.definicio ? `<span class="obs-definicio">${esc(i.definicio)}</span>` : ''}${i.nota ? `<span class="obs-nota">${esc(i.nota)}</span>` : ''}</th><td class="obs-num">${valorObservatori(i)}</td><td>${esc(i.any || 'no consta')}</td><td>${fontObservatori(i)}</td></tr>`).join('')}</tbody></table></div>`).join('')}` : ''}
-   ${!indicadors.length ? '<p>No s\'han pogut carregar els indicadors. Pots consultar les dades a <a href="https://observatori.salt.cat/" target="_blank" rel="noopener">l\'Observatori de Salt</a>.</p>' : ''}
-   ${oportunitats.length ? `<h3>De les dades a la planificació comunitària</h3><p>Propostes de treball per contrastar amb l'equip i la comunitat. Els indicadors municipals no demostren causes ni necessitats individuals; els enllaços identifiquen actors amb qui explorar cada proposta.</p><div class="obs-oportunitats">${oportunitats.map(o => `<section class="obs-proposta"><h4>${esc(o.titol)}</h4><p>${esc(o.text)}</p><div class="obs-accions">${V[o.vista] ? `<a class="btn" href="#v=${esc(o.vista)}">${esc(V[o.vista].q)} →</a>` : ''}${(o.actors || []).filter(id => byId[id]).map(id => `<a href="#v=observatori&a=${encodeURIComponent(id)}" data-obre="${esc(id)}">${esc(byId[id].nom)}</a>`).join('')}</div></section>`).join('')}</div>` : ''}
-   <p class="obs-peu"><a href="https://observatori.salt.cat/" target="_blank" rel="noopener">Observatori de Salt ↗</a>${llicencia ? ` · ${safeUrl(llicencia.url) ? `<a href="${esc(llicencia.url)}" target="_blank" rel="noopener">${esc(llicencia.nom)}</a>` : esc(llicencia.nom)}` : ''}. Les fonts i els períodes consten a cada indicador.</p>`;
+   <p class="subt">Observatori de Salt · Consulta: ${esc(OCM.consultat || OM.consultat || 'no consta')} · Context del municipi</p>
+   <div class="obs-abast"><span class="etq mesura">Dades oficials municipals</span><p>Aquestes dades descriuen <b>Salt</b>. No són la població assignada a cada CAP ni el conjunt de l'EAP, que també inclou altres municipis. Els barris, les seccions censals i les zones de CAP són àmbits diferents.</p></div>
+   <nav class="obs-salts" aria-label="Seccions de dades"><button class="btn" data-obs-salta="obs-cataleg">Explora el catàleg (${OCF.length}) ↓</button><button class="btn" data-obs-salta="obs-planificacio">Planificació comunitària ↓</button><button class="btn" data-obs-salta="obs-descarregues">Descarrega les dades ↓</button></nav>
+   ${destacats.length ? `<h3>Salt, en quatre dades</h3><div class="obs-targetes">${destacats.map(obsResumTargeta).join('')}</div>` : ''}
+   ${resta.length ? `<details class="obs-resum"><summary>Amplia el resum de 2025 · ${indicadors.length} indicadors seleccionats</summary>${OM.nota ? `<p class="obs-ajuda">${esc(OM.nota)}</p>` : ''}${grups.map(grup => `<div class="obs-taula"><table><caption>${esc(grup)}</caption><thead><tr><th scope="col">Indicador</th><th scope="col">Valor</th><th scope="col">Any</th><th scope="col">Font</th></tr></thead><tbody>${resta.filter(i => (i.grup || 'Altres indicadors') === grup).map(i => `<tr><th scope="row">${esc(i.nom)}${i.definicio ? `<span class="obs-definicio">${esc(i.definicio)}</span>` : ''}${i.nota ? `<span class="obs-nota">${esc(i.nota)}</span>` : ''}</th><td class="obs-num">${valorObservatori(i)}</td><td>${esc(i.any || 'no consta')}</td><td>${fontObservatori(i)}</td></tr>`).join('')}</tbody></table></div>`).join('')}</details>` : ''}
+   <section id="obs-cataleg" class="obs-cataleg" aria-labelledby="obs-cataleg-titol"><div class="obs-cap-seccio"><div><p class="obs-cella">Demografia · Medi ambient · Territori</p><h3 id="obs-cataleg-titol">Tot el catàleg de l'Observatori</h3></div><span class="obs-comptador">${OCF.length} fitxes</span></div>
+    <p class="obs-ajuda">${disponibles} fitxes amb taules i ${OCF.length - disponibles} amb taula no recuperada en aquesta consulta. Les fitxes sense valors també es conserven, amb la seva definició i font. Cada fitxa pot contenir diversos àmbits, variables i anys.</p>
+    <div class="obs-filtres"><label class="obs-cercador" for="obs-cerca">Cerca al catàleg<input id="obs-cerca" type="search" placeholder="P. ex.: llars, natalitat, espais verds…" value="${esc(obsEstat.q)}" autocomplete="off"></label><label for="obs-categoria">Tema<select id="obs-categoria"><option value="">Tots els temes</option>${Object.entries(OBS_CATEGORIES).map(([k,v]) => `<option value="${k}" ${obsEstat.categoria === k ? 'selected' : ''}>${v}</option>`).join('')}</select></label><label for="obs-subcategoria">Subtema<select id="obs-subcategoria"></select></label><label for="obs-estat">Disponibilitat<select id="obs-estat"><option value="">Totes les fitxes</option><option value="disponible" ${obsEstat.estat === 'disponible' ? 'selected' : ''}>Amb taules</option><option value="sense_taula" ${obsEstat.estat === 'sense_taula' ? 'selected' : ''}>Taula no recuperada</option></select></label></div>
+    <div class="obs-resultats-cap"><p id="obs-resultats" role="status" aria-live="polite"></p><button class="btn" id="obs-neteja">Neteja els filtres</button><button class="btn" id="obs-export-filtre">CSV de les fitxes filtrades</button></div>
+    <div class="obs-explorador"><nav id="obs-llista" aria-label="Fitxes del catàleg"></nav><section id="obs-detall" aria-label="Dades de la fitxa seleccionada"></section></div>
+   </section>
+   <section id="obs-planificacio"><h3>De les dades a la planificació comunitària</h3><p>Propostes de treball per contrastar amb l'equip i la comunitat. Els indicadors municipals no demostren causes ni necessitats individuals; els enllaços identifiquen actors amb qui explorar cada proposta.</p><div class="obs-oportunitats">${oportunitats.map(o => `<section class="obs-proposta"><h4>${esc(o.titol)}</h4><p>${esc(o.text)}</p><div class="obs-accions">${V[o.vista] ? `<a class="btn" href="#v=${esc(o.vista)}">${esc(V[o.vista].q)} →</a>` : ''}${(o.actors || []).filter(id => byId[id]).map(id => `<a href="#v=observatori&a=${encodeURIComponent(id)}" data-obre="${esc(id)}">${esc(byId[id].nom)}</a>`).join('')}</div></section>`).join('')}</div></section>
+   <section id="obs-descarregues" class="obs-descarregues"><h3>Dades, cobertura i documents</h3><p>El CSV complet inclou les variants i les sèries històriques recollides. El registre de cobertura identifica què ofereix cada fitxa i les limitacions de la font.</p><div class="obs-accions"><a class="btn" href="descarregues/observatori_dades_completes.zip" download>CSV complet (ZIP)</a><a class="btn" href="descarregues/observatori_cataleg_complet.json" download>Catàleg i taules (JSON)</a><a class="btn" href="descarregues/observatori_cobertura.csv" download>Registre de cobertura (CSV)</a><a class="btn" href="descarregues/observatori_fonts_originals.zip" download>Fonts originals (ZIP)</a></div><p><a href="descarregues/Sociograma_Salt_Observatori_complet_2026-10-17.pdf">Actualització del sociograma (PDF)</a> · <a href="descarregues/Sociograma_Salt_Observatori_complet_2026-10-17.docx">DOCX</a></p></section>
+   <p class="obs-peu">${obsFontEnllac('https://observatori.salt.cat/', 'Observatori de Salt')}${llicencia ? ` · ${obsFontEnllac(llicencia.url,llicencia.nom)}` : ''}. «Sense dada» no equival a zero. Les dates, àmbits i unitats es conserven tal com els publica la font.</p>`;
   $('#observatori').querySelectorAll('[data-obre]').forEach(x => x.onclick = e => { e.preventDefault(); obreFitxa(x.dataset.obre); });
+  $('#observatori').querySelectorAll('[data-obs-salta]').forEach(x => x.onclick = () => $('#' + x.dataset.obsSalta).scrollIntoView({behavior:MOVIMENT ? 'smooth' : 'auto',block:'start'}));
+  const filtra = () => { obsEstat.id = ''; obsEstat.variant = ''; pintaCataleg(); desaHash(); };
+  $('#obs-cerca').oninput = e => { obsEstat.q = e.target.value; filtra(); };
+  $('#obs-categoria').onchange = e => { obsEstat.categoria = e.target.value; obsEstat.subcategoria = ''; pintaObsSubcategories(); filtra(); };
+  $('#obs-subcategoria').onchange = e => { obsEstat.subcategoria = e.target.value; filtra(); };
+  $('#obs-estat').onchange = e => { obsEstat.estat = e.target.value; filtra(); };
+  $('#obs-neteja').onclick = () => { Object.assign(obsEstat,{q:'',categoria:'',subcategoria:'',estat:'',id:'',variant:''}); $('#obs-cerca').value = ''; $('#obs-categoria').value = ''; $('#obs-estat').value = ''; pintaObsSubcategories(); filtra(); };
+  $('#obs-export-filtre').onclick = () => exportaObservatori(false);
+  pintaObsSubcategories(); pintaCataleg();
+}
+function pintaObsSubcategories(){
+  const sub = [...new Set(OCF.filter(f => !obsEstat.categoria || f.categoria === obsEstat.categoria).map(f => f.subcategoria).filter(Boolean))].sort((a,b) => a.localeCompare(b,'ca'));
+  $('#obs-subcategoria').innerHTML = `<option value="">Tots els subtemes</option>${sub.map(s => `<option value="${esc(s)}" ${obsEstat.subcategoria === s ? 'selected' : ''}>${esc(s)}</option>`).join('')}`;
+}
+function pintaCataleg(){
+  const fitxes = obsFiltrades();
+  if (!fitxes.some(f => f.id === obsEstat.id)) { obsEstat.id = (fitxes.find(obsDisponible) || fitxes[0] || {}).id || ''; obsEstat.variant = ''; }
+  $('#obs-resultats').textContent = `${fitxes.length} de ${OCF.length} fitxes`;
+  $('#obs-export-filtre').disabled = !fitxes.length;
+  $('#obs-llista').innerHTML = fitxes.length ? fitxes.map(f => `<button type="button" class="obs-fitxa-boto" data-obs-id="${esc(f.id)}" ${f.id === obsEstat.id ? 'aria-current="true"' : ''}><span class="obs-categoria-nom">${esc(obsCat(f))} · ${esc(f.subcategoria || '')}</span><strong>${esc(f.titol)}</strong><span class="obs-estat ${obsDisponible(f) ? 'obs-disponible' : 'obs-buit'}">${obsEstatText(f)}${(f.cobertura || {}).anys?.length ? ` · ${esc(Math.min(...f.cobertura.anys))}–${esc(Math.max(...f.cobertura.anys))}` : ''}</span></button>`).join('') : '<p class="obs-buit-cerca">No hi ha fitxes amb aquests filtres. Prova una altra cerca o neteja els filtres.</p>';
+  $('#obs-llista').querySelectorAll('[data-obs-id]').forEach(b => b.onclick = () => { obsEstat.id = b.dataset.obsId; obsEstat.variant = ''; $('#obs-llista').querySelectorAll('[data-obs-id]').forEach(x => x === b ? x.setAttribute('aria-current','true') : x.removeAttribute('aria-current')); pintaObsDetall(); desaHash(); if (matchMedia('(max-width:900px)').matches) $('#obs-detall').scrollIntoView({block:'start',behavior:MOVIMENT ? 'smooth' : 'auto'}); });
+  pintaObsDetall();
+}
+function obsColumnesVisibles(t){
+  const h = obsColumnes(t), anys = obsAnys(t);
+  const valid = anys.filter(Number.isFinite);
+  const ultim = valid.length ? Math.max(...valid) : null;
+  return h.map((_,i) => i).filter(i => obsEstat.anys === 'all' || anys[i] == null || anys[i] === ultim);
+}
+function obsColEtiqueta(t){ return Object.prototype.hasOwnProperty.call(t,'columna_etiqueta') ? t.columna_etiqueta : 0; }
+function obsValorTaula(t, valor){
+  if (valor == null || valor === '') return '<span class="obs-sense-dada">Sense dada</span>';
+  const text = String(valor), numeric = /^(-?\d+(?:\.\d+)?)(%)?$/.exec(text);
+  if (t.format_numeric === 'decimal-punt' && numeric) {
+    const decimals = (numeric[1].split('.')[1] || '').length;
+    const numero = Number(numeric[1]);
+    if (Number.isFinite(numero)) return `<span title="${esc('Valor original: ' + text)}">${esc(numero.toLocaleString('ca-ES',{minimumFractionDigits:Math.min(decimals,10),maximumFractionDigits:Math.min(decimals,10)}) + (numeric[2] || ''))}</span>`;
+  }
+  return esc(text);
+}
+function obsTaula(t, ix){
+  const h = obsColumnes(t), cols = obsColumnesVisibles(t), rows = t.rows || [], etiqueta = obsColEtiqueta(t);
+  if (!rows.length) return '';
+  return `<div class="obs-taula obs-historic" tabindex="0" role="region" aria-label="Taula ${ix + 1}, desplaçament horitzontal"><table><caption>${esc(t.titol || t.caption || `Taula ${ix + 1}`)}</caption><thead><tr>${cols.map((c,i) => `<th scope="col"${c === etiqueta ? ' class="obs-col-etiqueta"' : ''}>${esc(h[c] || (c === etiqueta ? 'Categoria / indicador' : 'Valor'))}</th>`).join('')}</tr></thead><tbody>${rows.map(r => `<tr>${cols.map(c => c === etiqueta ? `<th scope="row">${esc(r[c] || '—')}</th>` : `<td>${obsValorTaula(t,r[c])}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
+}
+function pintaObsDetall(){
+  const {f,v} = obsSeleccio();
+  if (!f) { $('#obs-detall').innerHTML = '<p class="obs-buit-cerca">Selecciona una fitxa del catàleg per consultar-ne la definició, les variants i les sèries històriques.</p>'; return; }
+  const variants = f.variants || [], tables = v?.tables || [];
+  obsEstat.variant = v ? obsVariantKey(v,variants.indexOf(v)) : '';
+  const anys = [...new Set(tables.flatMap(obsAnys).filter(Number.isFinite))].sort((a,b) => a-b);
+  $('#obs-detall').innerHTML = `<p class="obs-cella">${esc(obsCat(f))} · ${esc(f.subcategoria || '')}</p><h4>${esc(f.titol)}</h4><p><span class="obs-estat ${obsDisponible(f) ? 'obs-disponible' : 'obs-buit'}">${obsEstatText(f)}</span> <span class="obs-data-consulta">Consulta: ${esc(f.consultat || OCM.consultat || '')}</span></p>
+   ${f.definicio ? `<p class="obs-def-fitxa">${esc(f.definicio)}</p>` : ''}
+   <p class="obs-font">${obsFontEnllac(f.url,'Fitxa original a l’Observatori')}${f.font ? `<br>${esc(f.font)}` : ''}</p>
+   ${(f.notes || []).length ? `<div class="obs-notes">${f.notes.map(n => `<p>${esc(n)}</p>`).join('')}</div>` : ''}
+   ${variants.length ? `<div class="obs-controls-fitxa"><label for="obs-variant">Àmbit i variable<select id="obs-variant">${variants.map((x,i) => `<option value="${esc(obsVariantKey(x,i))}" ${x === v ? 'selected' : ''}>${esc([x.ambit,x.variant,x.temporalitat].filter(Boolean).join(' · ') || `Variant ${i+1}`)}${!(x.tables || []).some(t => t.rows && t.rows.length) ? ' · taula no recuperada' : ''}</option>`).join('')}</select></label><label for="obs-anys">Període<select id="obs-anys"><option value="latest" ${obsEstat.anys === 'latest' ? 'selected' : ''}>Últim any de cada taula</option><option value="all" ${obsEstat.anys === 'all' ? 'selected' : ''}>Tots els anys</option></select></label></div>` : ''}
+   ${v ? `<p class="obs-ajuda">${esc(v.ambit || 'Àmbit segons la font')} · ${esc(v.temporalitat || 'Periodicitat segons la font')}${anys.length ? ` · ${obsEstat.anys === 'all' ? `Sèrie ${anys[0]}–${anys[anys.length-1]}` : `Últim any disponible: ${anys[anys.length-1]}`}` : ''}. ${obsFontEnllac(v.url || f.url,'Obre aquesta variant a la font')}</p>` : ''}
+   ${tables.some(t => (t.rows || []).length) ? `<p class="obs-ajuda">Valors i unitats de la font; decimals amb coma i milers amb punt per facilitar-ne la lectura. El valor original es conserva al CSV i es pot consultar passant el cursor per la xifra. Desplaça la taula horitzontalment per veure tots els anys.</p>${tables.map(obsTaula).join('')}<button class="btn" id="obs-export-fitxa">CSV de la variant i el període visibles</button>` : `<div class="obs-absencia"><strong>No s’ha pogut recuperar cap taula en aquesta consulta.</strong><p>Es conserva la fitxa i la seva definició. Aquesta absència no equival a un valor zero. ${obsFontEnllac(v?.url || f.url,'Consulta la font original')}</p></div>`}
+   ${(v?.notes || []).length ? `<div class="obs-notes"><strong>Notes de la font per a aquesta variant</strong>${v.notes.map(n => `<p>${esc(n)}</p>`).join('')}</div>` : ''}
+   ${f.calcul ? `<details class="obs-metode"><summary>Definició del càlcul i mètode</summary><p>${esc(f.calcul)}</p></details>` : ''}`;
+  if ($('#obs-variant')) $('#obs-variant').onchange = e => { obsEstat.variant = e.target.value; pintaObsDetall(); desaHash(); };
+  if ($('#obs-anys')) $('#obs-anys').onchange = e => { obsEstat.anys = e.target.value; pintaObsDetall(); desaHash(); };
+  if ($('#obs-export-fitxa')) $('#obs-export-fitxa').onclick = () => exportaObservatori(true);
+}
+function exportaObservatori(nomesVisible){
+  const {f,v} = obsSeleccio();
+  const fitxes = nomesVisible ? (f ? [f] : []) : obsFiltrades();
+  if (!nomesVisible && fitxes.length === OCF.length) {
+    baixa('observatori_dades_completes.zip','descarregues/observatori_dades_completes.zip');
+    avis('Descàrrega del CSV complet comprimit en ZIP'); return;
+  }
+  const rows = [];
+  fitxes.forEach(fitxa => {
+    const variants = nomesVisible ? (v ? [v] : []) : (fitxa.variants || []);
+    const base = {fitxa_id:fitxa.id,titol:fitxa.titol,categoria:obsCat(fitxa),subcategoria:fitxa.subcategoria,font:fitxa.font,definicio:fitxa.definicio,consultat:fitxa.consultat || OCM.consultat,estat:fitxa.estat,url_fitxa:fitxa.url};
+    if (!variants.length) rows.push(Object.assign({},base,{valor_text:'',url_variant:fitxa.url}));
+    variants.forEach(variant => {
+      let dades = false;
+      const info = Object.assign({},base,{ambit:variant.ambit,variant:variant.variant,temporalitat:variant.temporalitat,url_variant:variant.url || fitxa.url,notes:[...(fitxa.notes || []),...(variant.notes || [])].join(' | ')});
+      (variant.tables || []).forEach((t,ti) => {
+        const headers = obsColumnes(t), anys = obsAnys(t), etiqueta = obsColEtiqueta(t), cols = nomesVisible ? obsColumnesVisibles(t) : headers.map((_,i) => i);
+        (t.rows || []).forEach((r,ri) => cols.forEach(c => {
+          if (c === etiqueta) return;
+          dades = true;
+          rows.push(Object.assign({},info,{taula:ti+1,fila:ri+1,etiqueta_fila:etiqueta == null ? '' : r[etiqueta],columna:headers[c],any:anys[c] || '',valor_text:r[c] ?? '',unitat:(t.unitats || [])[c] || '',format_numeric:t.format_numeric || ''}));
+        }));
+      });
+      if (!dades) rows.push(Object.assign({},info,{valor_text:''}));
+    });
+  });
+  const cols = ['fitxa_id','titol','categoria','subcategoria','ambit','variant','temporalitat','taula','fila','etiqueta_fila','columna','any','valor_text','unitat','format_numeric','estat','font','definicio','notes','url_fitxa','url_variant','consultat'];
+  baixa(nomesVisible ? `observatori_${f?.id || 'seleccio'}.csv` : 'observatori_fitxes_filtrades.csv',URL.createObjectURL(new Blob([csv(rows,cols)],{type:'text/csv;charset=utf-8'})));
+  avis(`CSV exportat: ${fitxes.length} fitxes, ${rows.length} registres`);
 }
 function pintaValidacio(){
   const h = R.filter(r => r.estat === HIP);
@@ -564,6 +699,12 @@ function desaHash(){
   if (!estat.d3) p.set('m', '2d'); if (estat.arcs) p.set('r', '1'); if (estat.base !== 'positron') p.set('b', estat.base); if (estat.relleu) p.set('o', '1');
   if (estat.v === 'xarxa' && cy) { const pn = cy.pan(); p.set('x', [pn.x.toFixed(0), pn.y.toFixed(0), cy.zoom().toFixed(3)].join(',')); if (estat.xEsf) p.set('esf', estat.xEsf); if (estat.xNiv) p.set('niv', estat.xNiv); }
   if (V[estat.v].filtreEsfera && estat.esf.size < Object.keys(ESF).length) p.set('e', Object.keys(ESF).map((e,i) => estat.esf.has(e) ? i : '').filter(x => x !== '').join('.'));
+  if (estat.v === 'observatori') {
+    if (obsEstat.id) p.set('i',obsEstat.id); if (obsEstat.variant) p.set('variant',obsEstat.variant);
+    if (obsEstat.anys === 'all') p.set('years','all');
+    if (obsEstat.q) p.set('q',obsEstat.q); if (obsEstat.categoria) p.set('tema',obsEstat.categoria);
+    if (obsEstat.subcategoria) p.set('subtema',obsEstat.subcategoria); if (obsEstat.estat) p.set('disponibilitat',obsEstat.estat);
+  }
   if (estat.fitxa) p.set('a', estat.fitxa);
   history.replaceState(null, '', '#' + p.toString());
 }
@@ -572,6 +713,7 @@ function llegeixHash(){
   if (p.has('e')) { const ix = p.get('e').split('.').map(Number); estat.esf = new Set(Object.keys(ESF).filter((e,i) => ix.includes(i))); }
   estat.xEsf = p.get('esf') || ''; estat.xNiv = p.get('niv') || '';
   estat.d3 = p.get('m') !== '2d'; estat.arcs = p.get('r') === '1'; estat.base = p.get('b') === 'orto' ? 'orto' : 'positron'; estat.relleu = p.get('o') === '1'; botons3D();
+  if (v === 'observatori') Object.assign(obsEstat,{id:p.get('i') || '',variant:p.get('variant') || '',anys:p.get('years') === 'all' ? 'all' : 'latest',q:p.get('q') || '',categoria:p.get('tema') || '',subcategoria:p.get('subtema') || '',estat:p.get('disponibilitat') || ''});
   return {v, c:p.get('c'), x:p.get('x'), a:p.get('a')};
 }
 function mostra(v, h){
@@ -584,14 +726,16 @@ function mostra(v, h){
     else if (!nou && !(h && h.a)) vola(v); }
   if (t === 'xarxa') { if (!cy) iniciaXarxa(); cy.resize(); if (h && h.x) { const [x,y,z] = h.x.split(',').map(Number); cy.viewport({zoom:z, pan:{x,y}}); } else if (!h || !h.x) encaixaXarxa(); filtraXarxa(); }
   if (v === 'portada') pintaPortada(); if (v === 'validar') pintaValidacio(); if (v === 'observatori') pintaObservatori();
-  $('#btn-csv').title = v === 'observatori' ? 'Exporta els indicadors oficials amb fonts i períodes en CSV' : 'Exporta la selecció en CSV';
+  $('#btn-csv').title = v === 'observatori' ? 'Exporta totes les variants i anys de les fitxes filtrades del catàleg' : 'Exporta la selecció en CSV';
+  $('#btn-csv').textContent = 'CSV';
+  $('#btn-csv').setAttribute('aria-label', v === 'observatori' ? 'Exporta CSV de les fitxes filtrades' : 'Exporta la selecció en CSV');
   pintaLlegenda(v); pintaFiltres(); pintaAnalisi();
   if (t === 'xarxa' && !(h && h.x)) encaixaXarxa();
   document.title = V[v].q + ' · Sociograma CAP Salt';
   if (h && h.a && byId[h.a]) obreFitxa(h.a); else if (estat.fitxa && !(h && h.a)) { $('#fitxa').hidden = true; estat.fitxa = null; treuRessalt(); }
   restaurant = false; desaHash();
 }
-window.addEventListener('hashchange', () => { const h = llegeixHash(); if (h.v !== estat.v || h.a !== estat.fitxa) mostra(h.v, h); });
+window.addEventListener('hashchange', () => { const h = llegeixHash(); if (h.v !== estat.v || h.a !== estat.fitxa || h.v === 'observatori') mostra(h.v, h); });
 document.querySelectorAll('#llista-vistes a').forEach(a => a.addEventListener('click', e => { e.preventDefault(); estat.fitxa = null; $('#fitxa').hidden = true; mostra(a.dataset.v, null); if (matchMedia('(max-width:760px)').matches) { document.body.classList.add('calaix-tancat'); } }));
 
 /* ---------- cerca Ctrl+K ---------- */
@@ -659,7 +803,7 @@ async function exportaPNG(){
 function csv(rows, cols){ const q = x => { const s = String(x == null ? '' : x); return /[",\n;]/.test(s) ? '"' + s.replace(/"/g,'""') + '"' : s; };
   return '\ufeff' + cols.join(',') + '\n' + rows.map(r => cols.map(c => q(r[c])).join(',')).join('\n'); }
 function exportaCSV(){
-  const v = estat.v; let rows, cols, nom = `seleccio_${v}.csv`;
+  const v = estat.v; if (v === 'observatori') { exportaObservatori(false); return; } let rows, cols, nom = `seleccio_${v}.csv`;
   const AC = ['id','nom','tipus_alberich','nivell','esfera','ambit','adreca','web_contacte_public','rol_potencial','font_url','data_font','estat_verificacio','lat','lon','precisio_geo','cap_proximitat','cap_mes_proper','dist_cap_m'];
   const RC = ['origen','origen_nom','desti','desti_nom','tipus_relacio','estat','classe','evidencia','font_url','data_font'];
   if (v === 'ist') { rows = D.seccions.features.map(f => ({seccio:f.properties.CUSEC, codi:f.properties.codi, ist_2023:f.properties.ist_2023, ist_2024_provisional:f.properties.ist_2024p, dist_centroide_cap_m:f.properties.dist_cap_centroide_m})); cols = Object.keys(rows[0]); }

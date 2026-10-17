@@ -4,20 +4,50 @@ Visor web estàtic (sense backend) del sociograma comunitari del territori dels 
 
 ## Actualització de l’Observatori de Salt · 17/10/2026
 
-La vista **Què ens diuen les dades oficials?** (`#v=observatori`) integra 23 indicadors seleccionats de l’[Observatori de Salt](https://observatori.salt.cat/), amb dades de **2025**, font, definició i enllaç a la taula original. Inclou població per edat, naixement i nacionalitat, llars, densitat, població per barris i habitatges amb/sense empadronament. Manté el mapa i la xarxa originals i connecta quatre propostes de planificació amb actors ja existents. Les propostes són orientacions a validar, no conclusions publicades per l’Observatori.
+La vista **Què ens diuen les dades oficials?** (`#v=observatori`) reuneix un resum de **23 indicadors seleccionats de 2025** i un explorador de les fitxes de l’[Observatori de Salt](https://observatori.salt.cat/): demografia, medi ambient i territori. El catàleg permet cercar, filtrar per tema i disponibilitat, escollir la variant territorial o estadística i consultar l’últim any o la sèrie recollida. Les xifres efectives de cobertura es calculen des de les dades capturades i consten al visor, al JSON i al CSV de cobertura; no es pressuposa que cada fitxa publiqui una taula.
+
+El resum inclou població per edat, naixement i nacionalitat, llars, densitat, població per barris i habitatges amb/sense empadronament. Manté el mapa i la xarxa originals i connecta quatre propostes de planificació amb 14 actors ja existents. Les propostes són orientacions a validar, no conclusions publicades per l’Observatori. El catàleg és una captura datada, sense actualització automàtica en temps real.
+
+La captura de 17/10/2026 comprèn les **87 fitxes** de l’inventari (53 de demografia, 20 de medi ambient i 14 de territori), **798 variants** i **590.469 cel·les**. Hi ha 86 fitxes amb taules i una sense dades: «Evolució de la població 2000–2025». Els anys representats al conjunt van de 1857 a 2025; aquest interval no implica una sèrie contínua a cada indicador. Es conserven les 210 notes originals associades a variants.
 
 - Àmbit: municipi de Salt. No representa la població assignada als dos CAP ni la de tot l’EAP; barris, seccions censals i zones de CAP no són intercanviables.
-- Any de referència: 2025; consulta: 17/10/2026. La font indica periodicitat anual, sense data exacta de tall visible. El títol de la pàgina de barris conserva «2000–2024», però la taula ja inclou 2025.
+- Any del resum seleccionat: 2025; consulta: 17/10/2026. Les fitxes del catàleg conserven el seu propi període i periodicitat. La font demogràfica indica periodicitat anual, sense data exacta de tall visible. El títol de la pàgina de barris conserva «2000–2024», però la taula ja inclou 2025.
 - Naixement a l’estranger i nacionalitat estrangera són variables diferents. Viure sol no acredita soledat no volguda. Els 90 països corresponen al naixement a l’estranger, no a nacionalitats.
-- Habitatge: es reprodueixen els recomptes 10.526 amb padró, 1.098 sense padró i 11.624 totals. S’ometen els percentatges inconsistents de la font (91,1%, 9,5% i total mostrat de 101%). No s’equipara «sense padró» amb habitatge buit.
-- Els PDF/DOCX anteriors són documents base; aquesta actualització correspon al visor i al nou CSV.
+- Habitatge: el resum reprodueix els recomptes 10.526 amb padró, 1.098 sense padró i 11.624 totals i omet els percentatges inconsistents (91,1%, 9,5% i total mostrat de 101%). La taula original del catàleg conserva els valors publicats amb l’advertiment corresponent. No s’equipara «sense padró» amb habitatge buit.
+- Els PDF/DOCX anteriors es conserven com a documents base. Els documents d’actualització de l’Observatori s’identifiquen amb la data 17/10/2026; no substitueixen les fonts originals.
 - Atribució: Ajuntament de Salt, Observatori de Salt; Padró Municipal d’Habitants i Àrea de Territori. El portal indica [CC BY-NC-SA 3.0 ES](https://creativecommons.org/licenses/by-nc-sa/3.0/es/deed.ca).
 
-Fitxers:
+Fitxers del resum:
 - `data/observatori-fonts.json`: transcripció de les taules demogràfiques consultades, amb sèries i URLs.
 - `data/observatori.json` i `data/observatori.js`: dades publicades, independents del bundle d’actors.
-- `descarregues/observatori_salt_2025.csv`: exportació amb fonts i dates; el botó CSV de la vista exporta també els indicadors.
+- `descarregues/observatori_salt_2025.csv`: exportació dels 23 indicadors seleccionats, amb fonts i dates.
 - `scripts/build_observatori.py`: regenera els fitxers amb Python estàndard. Comprova les sumes d’edats, barris i llars, i l’existència dels actors enllaçats. Executar `python3 scripts/build_observatori.py`.
+
+### Catàleg, sèries i cobertura
+
+- `data/observatori-raw/api-complet.json`: importació de les respostes de l’API pública que utilitza el mateix portal. Es mantenen les etiquetes, capçaleres, cel·les i notes originals, inclosos els marcadors d’absència de dades. També conserva `rawdata` i les configuracions originals dels gràfics i mapes.
+- `data/observatori-cataleg.json` i `data/observatori-cataleg.js`: catàleg del visor, independent del resum i del conjunt d’actors. Les propietats `columnes`, `anys`, `unitats` i `columna_etiqueta` descriuen les taules sense modificar `headers` ni `rows`.
+- `descarregues/observatori_cataleg_complet.json`: còpia íntegra descarregable del catàleg.
+- `descarregues/observatori_dades_completes.zip`: CSV complet comprimit. Cada registre identifica fitxa, àmbit, variant, taula, fila, columna, any, text original, interpretació numèrica, unitat i font. Els índexs de taula, fila i columna comencen a zero. Les absències no es converteixen en zero; desigualtats i altres textos conserven el text sense valor numèric inventat.
+- `descarregues/observatori_cobertura.csv`: disponibilitat, nombre de variants i taules, cel·les, períodes, fonts i notes per fitxa. Una fitxa sense taula es conserva amb la seva definició i no representa un valor zero.
+- `descarregues/observatori_fonts_originals.zip`: les 87 respostes originals de l’API, amb URL de la fitxa i de l’API. Permet reproduir la importació sense tornar a consultar la xarxa.
+- El botó **CSV filtrat** exporta totes les variants i anys de les fitxes que compleixen els filtres del catàleg. El botó de la fitxa exporta la variant i el període visibles. Els filtres, la fitxa, la variant i l’opció d’anys es conserven a l’enllaç compartit.
+
+Regeneració i comprovació (Python estàndard, sense connexió de xarxa):
+
+```bash
+python3 scripts/import_observatori_api.py --api-zip descarregues/observatori_fonts_originals.zip
+python3 scripts/build_observatori_catalog.py
+python3 scripts/test_observatori_catalog.py
+```
+
+L’importador interpreta els marcadors estructurals `anys`, `columnes` i `dades` del CSV intern de l’API i elimina només el marcador de registre i el separador final. Les columnes repetides d’any es mantenen alineades amb les subcolumnes, com ara nombre i percentatge o dones i homes. El filtre de sèries dels gràfics originals no elimina cap dada de l’exportació. La notació numèrica original de l’API fa servir el punt decimal: per exemple, `2.770` és 2,77, no 2.770 unitats; `format_numeric` ho declara explícitament.
+
+Les notes originals són necessàries per interpretar els valors. Per exemple, algunes sèries del barri del Pla codifiquen amb zero els anys 2000–2006 tot i indicar expressament que no hi ha dades per a aquest període. Es conserva el valor literal juntament amb la nota, també a la columna `nota_variant` del CSV, sense considerar-lo una observació demogràfica vàlida.
+
+Les advertències de revisió s’inclouen també a `nota_fitxa`: percentatges d’habitatge incoherents, discrepàncies dels totals de població i del lloc de naixement entre variants de «Naturalesa dels habitants», i una fórmula inversa al títol de «Nombre d’arbres per habitant». No es corregeixen les xifres publicades ni es calculen nous indicadors a partir dels valors discrepants.
+
+El generador exigeix les 87 fitxes de l’inventari del portal; el recompte no implica que totes tinguin valors publicats. Rebutja identificadors duplicats i estats de disponibilitat incompatibles amb les taules. La comprovació contrasta la captura amb el catàleg, el CSV, el ZIP i el JavaScript, inclosa la preservació dels zeros i dels valors absents. `--allow-partial` és una opció de desenvolupament i no acredita una captura completa.
 
 ## Com obrir-lo
 ```
@@ -30,21 +60,19 @@ python3 -m http.server 8000
 L'únic recurs extern són les teseles del mapa base (OpenFreeMap, positron), que necessiten connexió. Sense connexió, les capes de dades es pinten igualment, però sense el fons.
 
 ## Vistes
+
 0. Portada: què és, mètode, fonts, límits i descàrregues (PDF, DOCX, CSV).
-1. On són els actors comunitaris? Filtre per esfera.
-2. Quins actors de salut hi ha? Les 14 farmàcies consten com a actor agregat, sense ubicació individual.
-3. Qui fa xarxa al Tercer Sector? Inclou les línies de relació.
-4. Quins són els actors educatius? El test BULL-S apareix «a validar», sense ubicació.
-5. On són els actors de diversitat i culte?
-6. Quina és la vulnerabilitat de cada secció censal? Valors IST 2023 de l'Idescat sobre els límits del seccionat censal 2023 de l'INE. Etiqueta: «context de la secció, no de l'actor».
-7. Quina zona cobreix cada CAP? **Hipòtesi · no oficial**: mediatriu entre els dos CAP.
-8. Qui queda lluny d'un CAP? Distància en línia recta, no temps a peu.
-9. Com es relacionen? Xarxa Cytoscape amb:
-   - franges per nivell (polític, tècnic, social) i formes Alberich;
-   - línies forta, feble, conflicte o indirecta, i les hipòtesis en blau discontinu;
-   - filtres per esfera i nivell;
-   - anàlisi de ponts, buits i bloquejos.
-10. Què cal validar amb l'equip? 20 preguntes, les relacions hipòtesi (55 ara mateix) i els actors no verificats. El CSV d'aquesta vista inclou columnes buides per omplir a la sessió.
+1. Observatori: resum, catàleg temàtic, variants, sèries recollides, cobertura i descàrregues.
+2. On són els actors comunitaris? Filtre per esfera.
+3. Quins actors de salut hi ha? Les 14 farmàcies consten com a actor agregat, sense ubicació individual.
+4. Qui fa xarxa al Tercer Sector? Inclou les línies de relació.
+5. Quins són els actors educatius? El test BULL-S apareix «a validar», sense ubicació.
+6. On són els actors de diversitat i culte?
+7. Quina és la vulnerabilitat de cada secció censal? Valors IST 2023 de l'Idescat sobre els límits del seccionat censal 2023 de l'INE. Etiqueta: «context de la secció, no de l'actor».
+8. Quina zona cobreix cada CAP? **Hipòtesi · no oficial**: mediatriu entre els dos CAP.
+9. Qui queda lluny d'un CAP? Distància en línia recta, no temps a peu.
+10. Com es relacionen? Xarxa Cytoscape amb franges per nivell (polític, tècnic, social), formes Alberich i filtres per esfera i nivell. Les línies indiquen relació forta, feble, conflicte o indirecta; les hipòtesis són blaves i discontínues. Inclou anàlisi de ponts, buits i bloquejos.
+11. Què cal validar amb l'equip? 20 preguntes, les 56 relacions hipòtesi i els actors no verificats. El CSV d'aquesta vista inclou columnes buides per omplir a la sessió.
 
 ## Funcions
 - **Ctrl+K:** cerca per nom, tipus Alberich, nivell, esfera o àmbit.
@@ -75,7 +103,8 @@ L'únic recurs extern són les teseles del mapa base (OpenFreeMap, positron), qu
 
 ## Límits
 - El repartiment real de carrers entre Salt 1 i Salt 2 no és públic.
-- 141 dels 246 actors no tenen coordenades: no es pinten al mapa, però apareixen al calaix i a la xarxa.
+- El conjunt conté 259 nodes: 256 actors i 3 agregadors (E00, MG00 i R00). Hi ha 120 nodes amb coordenades i 139 sense coordenades; aquests últims no es pinten al mapa, però apareixen al catàleg d’actors i a la xarxa.
+- Les 478 relacions inclouen 422 documentades i 56 hipòtesis; 378 són funcionals i 100 estructurals. Els agregadors i les relacions estructurals ajuden a organitzar la xarxa, però no equivalen a actors o activitats addicionals.
 - Les relacions provenen de documents públics. Les marcades com a hipòtesi s'han de validar amb l'equip.
 - No hi ha dades de particulars. La direcció apareix com a «Direcció EAP».
 
