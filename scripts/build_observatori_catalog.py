@@ -8,7 +8,6 @@ from __future__ import annotations
 
 import argparse
 import copy
-import csv
 import hashlib
 import json
 import re
@@ -17,6 +16,7 @@ from collections import Counter
 from decimal import Decimal, InvalidOperation
 from pathlib import Path
 from urllib.parse import urlparse
+from csv_safety import write_spreadsheet_csv
 
 ROOT = Path(__file__).resolve().parents[1]
 EXPECTED_FICHES = 87
@@ -218,10 +218,7 @@ def normalize(fiches, inputs, expected=EXPECTED_FICHES, allow_partial=False):
 
 
 def write_csv(path, fieldnames, rows):
-    with path.open('w', encoding='utf-8-sig', newline='') as stream:
-        writer = csv.DictWriter(stream, fieldnames=fieldnames, extrasaction='ignore')
-        writer.writeheader()
-        writer.writerows(rows)
+    write_spreadsheet_csv(path, fieldnames, rows)
 
 
 def write_outputs(catalog, root=ROOT):

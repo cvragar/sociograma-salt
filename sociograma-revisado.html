@@ -1553,6 +1553,46 @@ earcut.flatten = function (data) {
  * retains the existing raster API and its accessible 2D SVG markers. */
 (() => {
   'use strict';
+/* BEGIN FIXED MAP ATTRIBUTION
+ * Only locally reviewed labels and URLs belong here. Never read attribution
+ * from a remote style or TileJSON: MapLibre's AttributionControl renders it as HTML.
+ */
+function atribucioFixa(){
+  let container;
+  const credits = [
+    "© col·laboradors d'", ['OpenStreetMap','https://www.openstreetmap.org/copyright'],
+    ' · ', ['OpenMapTiles','https://openmaptiles.org/'],
+    ' · ', ['OpenFreeMap','https://openfreemap.org/'],
+    ' · Límits: ', ['INE','https://www.ine.es/'],
+    ' · IST: ', ['Idescat','https://www.idescat.cat/'],
+    ' · Ortofoto i relleu: © ', ['ICGC','https://www.icgc.cat/'],
+    ' (', ['CC BY 4.0','https://creativecommons.org/licenses/by/4.0/'], ')'
+  ];
+  return {
+    getDefaultPosition(){ return 'bottom-right'; },
+    onAdd(){
+      container = document.createElement('div');
+      container.className = 'maplibregl-ctrl maplibregl-ctrl-attrib';
+      container.setAttribute('role','note');
+      container.setAttribute('aria-label','Fonts cartogràfiques');
+      container.style.maxWidth = 'min(680px, calc(100vw - 30px))';
+      const inner = document.createElement('div');
+      inner.className = 'maplibregl-ctrl-attrib-inner';
+      credits.forEach(credit => {
+        if (typeof credit === 'string') { inner.appendChild(document.createTextNode(credit)); return; }
+        const link = document.createElement('a');
+        link.textContent = credit[0]; link.href = credit[1];
+        link.target = '_blank'; link.rel = 'noopener noreferrer';
+        inner.appendChild(link);
+      });
+      container.appendChild(inner);
+      return container;
+    },
+    onRemove(){ if (container) container.remove(); container = null; }
+  };
+}
+/* END FIXED MAP ATTRIBUTION */
+
   const empty = () => ({type:'FeatureCollection',features:[]});
   class SaltVectorMap {
     constructor(el, options = {}) {
@@ -1569,8 +1609,7 @@ earcut.flatten = function (data) {
         pitch:this.is3D?(options.pitch??58):0, bearing:this.is3D?(options.bearing??-22):0,
         maxPitch:70, maxZoom:19, minZoom:10, maxTileCacheSize:48, maxTileCacheZoomLevels:2, preserveDrawingBuffer:true,
         attributionControl:false, hash:false});
-      this.gl.addControl(new maplibregl.AttributionControl({compact:true,
-        customAttribution:'<a href="https://openfreemap.org/" target="_blank" rel="noopener">OpenFreeMap</a> · <a href="https://openmaptiles.org/" target="_blank" rel="noopener">OpenMapTiles</a> · Límits INE · IST Idescat 2023'}));
+      this.gl.addControl(atribucioFixa());
       this.gl.addControl(new maplibregl.ScaleControl({unit:'metric'}),'bottom-left');
       this.gl.on('style.load',()=>this.initLayers());
       this.gl.on('move',()=>this.schedule());
@@ -2125,7 +2164,25 @@ function renderReview(){const internal=R.filter(r=>['intern','mixt'].includes(r.
 function pendingRows(){return A.filter(a=>a.necessita_validacio).map(a=>({tipus:'actor',id:a.id,nom:a.nom,estat:a.estat_verificacio,pendent:a.nota||'Confirmar dades operatives i fonts internes',font:a.font_url,responsable:'A acordar amb l’equip',validacio:'pendent'})).concat(R.filter(r=>r.suport!=='public').map(r=>({tipus:'relacio',id:r.id,nom:r.origen_nom+' / '+r.desti_nom,estat:supportLabel[r.suport],pendent:r.evidencia,font:r.font_url,responsable:'A acordar amb els actors implicats',validacio:'pendent'})))}
 
 // Portable exports, including protection against spreadsheet formula injection.
-function csv(rows){let fields=[...new Set(rows.flatMap(Object.keys))];const cell=v=>{if(v==null)v='';if(typeof v==='object')v=JSON.stringify(v);v=String(v);if(/^[=+@\t\r]/.test(v)||/^-(?!\d)/.test(v))v="'"+v;return '"'+v.replace(/"/g,'""')+'"'};return '\uFEFF'+[fields.map(cell).join(','),...rows.map(r=>fields.map(k=>cell(r[k])).join(','))].join('\r\n')}
+// Keep this policy in sync with scripts/csv_safety.py and the other browser entry point.
+function csvSafeCell(value){
+  const original = String(value == null ? '' : value);
+  if (typeof value === 'number') return original;
+  const padding = original.match(/^[\u0000-\u0020\u007f-\u00a0\u1680\u2000-\u200a\u2028\u2029\u202f\u205f\u3000\ufeff]*/)[0];
+  const candidate = original.slice(padding.length);
+  const negativeNumber = /^-(?:[0-9]+(?:[.,][0-9]+)?|[.,][0-9]+|[0-9]{1,3}(?:,[0-9]{3})+(?:\.[0-9]+)?|[0-9]{1,3}(?:\.[0-9]{3})+(?:,[0-9]+)?)(?:[eE][+-]?[0-9]+)?%?(?![\s\S])/;
+  const dangerous = /[\u0000-\u001f\u007f-\u009f]/.test(padding) ||
+    /^[=+@]/.test(candidate) || (candidate.startsWith('-') && !negativeNumber.test(candidate));
+  return dangerous ? "'" + original : original;
+}
+function csv(rows){
+  const fields = [...new Set(rows.flatMap(Object.keys))];
+  const cell = value => {
+    if (value != null && typeof value === 'object') value = JSON.stringify(value);
+    return '"' + csvSafeCell(value).replace(/"/g,'""') + '"';
+  };
+  return '\uFEFF' + [fields.map(cell).join(','), ...rows.map(r => fields.map(k => cell(r[k])).join(','))].join('\r\n');
+}
 function download(name,content,type){let blob=content instanceof Blob?content:new Blob([content],{type});let u=URL.createObjectURL(blob),a=document.createElement('a');a.href=u;a.download=name;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),10000)}
 function exportCsv(name,rows){download(name,csv(rows),'text/csv;charset=utf-8');toast('CSV preparat')}
 async function exportImage(mode){try{if(mode==='network'){if(!cy)return;const reader=new FileReader();reader.onload=()=>composeImage(reader.result,'Xarxa de relacions',`${networkData().aa.length} fitxes · ${networkData().rr.length} relacions · consulta tipus i font al visor`);reader.readAsDataURL(cy.png({output:'blob',bg:'#f4f7f9',scale:2,full:false}))}else if(mapReady){const canvas=await map.exportCanvas();composeImage(canvas.toDataURL('image/png'),'Mapa comunitari','© OpenStreetMap contributors · OpenFreeMap · OpenMapTiles · INE / IST 2023'+(state.photo&&map.setScene?'\nOrtofoto ©ICGC · CC BY 4.0 · '+(state.d3&&state.buildings?'Teulades projectades sobre volums OSM':'Imatge georeferenciada'):'')+' · vincles, no itineraris')}}catch(e){toast(e.message||'No s’ha pogut exportar la imatge.')}}

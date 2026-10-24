@@ -2,6 +2,41 @@
 
 Visor web estàtic (sense backend) del sociograma comunitari del territori dels CAP Salt 1 i Salt 2 (EAP Salt, ICS Girona, ABS 199), segons el mètode Alberich. Queden fora els pobles d'Aiguaviva, Bescanó (amb Estanyol i Vilanna), Fornells de la Selva i Vilablareix. L'estil s'inspira en Xamfrà: un calaix de vistes, cadascuna formulada com una pregunta, i una llegenda per vista amb la font, l'any i el mètode.
 
+## Correccions de seguretat · 24/10/2026
+
+El visor continua sent públic i no requereix compte ni inici de sessió. Aquesta
+revisió resol les tres troballes de l'anàlisi Codex Security sobre el commit
+`9747499a9b94dde464261901cab3cdea0d535dc7`:
+
+- **Atribució del mapa:** les dues entrades web mostren crèdits locals amb text i
+  enllaços fixos. No incorporen com a HTML les atribucions rebudes de l'estil o
+  del TileJSON extern. Es mantenen els crèdits d'OpenStreetMap, OpenMapTiles,
+  OpenFreeMap, INE, Idescat i ICGC.
+- **CSV per a fulls de càlcul:** els exportadors del navegador i els generadors
+  Python comparteixen la mateixa política. Les cel·les de text amb prefixos de
+  fórmula reben un apòstrof protector, també si hi ha espais o controls al davant.
+  Els nombres negatius complets es conserven sense arrodonir. Això també pot
+  afegir un apòstrof a marcadors com `-`; no els converteix en zeros ni en nombres.
+  El JSON i les fonts originals conserven literalment els valors de la captura.
+- **Importació de fonts:** abans de descomprimir, s'exigeixen els 87 membres JSON
+  de la captura, amb noms plans i únics, i es comproven mida, recompte i ràtio de
+  compressió. La lectura real i l'estructura JSON tenen pressupostos limitats.
+  Els mateixos límits de dades s'apliquen a la importació des d'un directori.
+
+Proves de regressió, sense dependències noves:
+
+```bash
+node scripts/test_map_security.js
+python3 scripts/test_csv_security.py
+python3 scripts/test_import_security.py
+python3 scripts/build_observatori_catalog.py
+python3 scripts/test_observatori_catalog.py
+```
+
+L'informe original queda referit a la versió analitzada; aquestes proves locals
+verifiquen les correccions i la conservació de les dades, però no són un nou
+escaneig complet de Codex Security.
+
 ## Actualització de l’Observatori de Salt · 17/10/2026
 
 La vista **Què ens diuen les dades oficials?** (`#v=observatori`) reuneix un resum de **23 indicadors seleccionats de 2025** i un explorador de les fitxes de l’[Observatori de Salt](https://observatori.salt.cat/): demografia, medi ambient i territori. El catàleg permet cercar, filtrar per tema i disponibilitat, escollir la variant territorial o estadística i consultar l’últim any o la sèrie recollida. Les xifres efectives de cobertura es calculen des de les dades capturades i consten al visor, al JSON i al CSV de cobertura; no es pressuposa que cada fitxa publiqui una taula.

@@ -3,10 +3,10 @@
 Executar des de qualsevol directori: python3 scripts/build_observatori.py
 No consulta la xarxa ni modifica el catàleg d'actors o les relacions.
 """
-import csv
 import json
 from pathlib import Path
 from urllib.parse import quote
+from csv_safety import write_spreadsheet_csv
 
 ROOT = Path(__file__).resolve().parents[1]
 raw = json.loads((ROOT / 'data/observatori-fonts.json').read_text())
@@ -69,8 +69,6 @@ serialized = json.dumps(out, ensure_ascii=False, indent=2)
 (ROOT/'data/observatori.js').write_text('window.OBSERVATORI = ' + serialized + ';\n')
 (ROOT/'descarregues').mkdir(exist_ok=True)
 cols = ['id', 'nom', 'valor', 'unitat', 'any', 'grup', 'font', 'url', 'definicio', 'nota', 'ambit', 'consultat']
-with (ROOT/'descarregues/observatori_salt_2025.csv').open('w', encoding='utf-8-sig', newline='') as f:
-    writer = csv.DictWriter(f, fieldnames=cols, extrasaction='ignore')
-    writer.writeheader()
-    for row in ind: writer.writerow(dict(row, ambit=out['metadades']['ambit'], consultat=out['metadades']['consultat']))
+write_spreadsheet_csv(ROOT/'descarregues/observatori_salt_2025.csv', cols,
+    (dict(row, ambit=out['metadades']['ambit'], consultat=out['metadades']['consultat']) for row in ind))
 print(f"{len(ind)} indicadors verificats; {len(out['oportunitats'])} propostes enllaçades; dades generades.")

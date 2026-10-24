@@ -12,6 +12,7 @@ import zipfile
 from pathlib import Path
 
 from build_observatori_catalog import ROOT, EXPECTED_FICHES, parse_number, read_fiches
+from csv_safety import spreadsheet_cell
 
 
 def test_number_semantics():
@@ -76,9 +77,9 @@ def check_catalog(root=ROOT, expected=EXPECTED_FICHES):
                         cursor += 1
                         assert result['fitxa_id'] == fiche['id']
                         assert result['fila'] == str(ri) and result['columna'] == str(ci)
-                        assert result['valor_text'] == ('' if value is None else str(value))
+                        assert result['valor_text'] == str(spreadsheet_cell(value))
                         if label_col is not None and label_col < len(row):
-                            assert result['etiqueta_fila'] == str(row[label_col])
+                            assert result['etiqueta_fila'] == str(spreadsheet_cell(row[label_col]))
                         if str(value).strip() in ('0', '0,0', '0.0', '0%'):
                             source_zeros += 1
                             assert result['valor_num'] == '0' and result['estat_valor'] == 'number'

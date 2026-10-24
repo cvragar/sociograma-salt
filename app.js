@@ -231,11 +231,51 @@ function vola(v){
   MOVIMENT ? map.flyTo(Object.assign(c, {duration:2400, curve:1.3, essential:false})) : map.jumpTo(c);
 }
 
+/* BEGIN FIXED MAP ATTRIBUTION
+ * Only locally reviewed labels and URLs belong here. Never read attribution
+ * from a remote style or TileJSON: MapLibre's AttributionControl renders it as HTML.
+ */
+function atribucioFixa(){
+  let container;
+  const credits = [
+    "© col·laboradors d'", ['OpenStreetMap','https://www.openstreetmap.org/copyright'],
+    ' · ', ['OpenMapTiles','https://openmaptiles.org/'],
+    ' · ', ['OpenFreeMap','https://openfreemap.org/'],
+    ' · Límits: ', ['INE','https://www.ine.es/'],
+    ' · IST: ', ['Idescat','https://www.idescat.cat/'],
+    ' · Ortofoto i relleu: © ', ['ICGC','https://www.icgc.cat/'],
+    ' (', ['CC BY 4.0','https://creativecommons.org/licenses/by/4.0/'], ')'
+  ];
+  return {
+    getDefaultPosition(){ return 'bottom-right'; },
+    onAdd(){
+      container = document.createElement('div');
+      container.className = 'maplibregl-ctrl maplibregl-ctrl-attrib';
+      container.setAttribute('role','note');
+      container.setAttribute('aria-label','Fonts cartogràfiques');
+      container.style.maxWidth = 'min(680px, calc(100vw - 30px))';
+      const inner = document.createElement('div');
+      inner.className = 'maplibregl-ctrl-attrib-inner';
+      credits.forEach(credit => {
+        if (typeof credit === 'string') { inner.appendChild(document.createTextNode(credit)); return; }
+        const link = document.createElement('a');
+        link.textContent = credit[0]; link.href = credit[1];
+        link.target = '_blank'; link.rel = 'noopener noreferrer';
+        inner.appendChild(link);
+      });
+      container.appendChild(inner);
+      return container;
+    },
+    onRemove(){ if (container) container.remove(); container = null; }
+  };
+}
+/* END FIXED MAP ATTRIBUTION */
+
 /* ---------- mapa ---------- */
 function iniciaMapa(){
   map = new maplibregl.Map({container:'mapa', style:'https://tiles.openfreemap.org/styles/positron', center:[2.789,41.974], zoom:13.6,
     preserveDrawingBuffer:true, attributionControl:false, hash:false});
-  map.addControl(new maplibregl.AttributionControl({compact:false, customAttribution:'© col·laboradors d\'<a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>, OpenMapTiles i <a href="https://openfreemap.org">OpenFreeMap</a> · Límits: INE · IST: Idescat'}));
+  map.addControl(atribucioFixa());
   map.addControl(new maplibregl.NavigationControl({showCompass:false}), 'top-right');
   map.addControl(new maplibregl.ScaleControl({unit:'metric'}), 'bottom-left');
   map.on('load', () => {
@@ -800,8 +840,21 @@ async function exportaPNG(){
   ctx.restore();
   baixa(`sociograma_salt_${v}.png`, cv.toDataURL('image/png')); avis('PNG exportat amb la llegenda');
 }
-function csv(rows, cols){ const q = x => { const s = String(x == null ? '' : x); return /[",\n;]/.test(s) ? '"' + s.replace(/"/g,'""') + '"' : s; };
-  return '\ufeff' + cols.join(',') + '\n' + rows.map(r => cols.map(c => q(r[c])).join(',')).join('\n'); }
+// Keep this policy in sync with scripts/csv_safety.py and the other browser entry point.
+function csvSafeCell(value){
+  const original = String(value == null ? '' : value);
+  if (typeof value === 'number') return original;
+  const padding = original.match(/^[\u0000-\u0020\u007f-\u00a0\u1680\u2000-\u200a\u2028\u2029\u202f\u205f\u3000\ufeff]*/)[0];
+  const candidate = original.slice(padding.length);
+  const negativeNumber = /^-(?:[0-9]+(?:[.,][0-9]+)?|[.,][0-9]+|[0-9]{1,3}(?:,[0-9]{3})+(?:\.[0-9]+)?|[0-9]{1,3}(?:\.[0-9]{3})+(?:,[0-9]+)?)(?:[eE][+-]?[0-9]+)?%?(?![\s\S])/;
+  const dangerous = /[\u0000-\u001f\u007f-\u009f]/.test(padding) ||
+    /^[=+@]/.test(candidate) || (candidate.startsWith('-') && !negativeNumber.test(candidate));
+  return dangerous ? "'" + original : original;
+}
+function csv(rows, cols){
+  const q = x => { const s = csvSafeCell(x); return /[",\r\n;]/.test(s) ? '"' + s.replace(/"/g,'""') + '"' : s; };
+  return '\ufeff' + [cols.map(q).join(','), ...rows.map(r => cols.map(c => q(r[c])).join(','))].join('\r\n');
+}
 function exportaCSV(){
   const v = estat.v; if (v === 'observatori') { exportaObservatori(false); return; } let rows, cols, nom = `seleccio_${v}.csv`;
   const AC = ['id','nom','tipus_alberich','nivell','esfera','ambit','adreca','web_contacte_public','rol_potencial','font_url','data_font','estat_verificacio','lat','lon','precisio_geo','cap_proximitat','cap_mes_proper','dist_cap_m'];
